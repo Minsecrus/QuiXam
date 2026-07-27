@@ -42,6 +42,8 @@ interface PaperStore {
   deletePaper: (id: string) => Promise<void>
   /** 返回错误信息，成功返回 null */
   importPaper: (json: string) => Promise<string | null>
+  /** 保存并打开由扫描识别生成的新试卷 */
+  addRecognizedPaper: (paper: Paper) => Promise<void>
 
   undo: () => void
   redo: () => void
@@ -425,6 +427,20 @@ export const usePaperStore = create<PaperStore>((set, get) => ({
       future: [],
     }))
     return null
+  },
+
+  addRecognizedPaper: async (paper) => {
+    await flushSave()
+    await db.putPaper(paper)
+    await db.setMeta(LAST_OPEN_KEY, paper.id)
+    lastSnapshotAt = 0
+    set((state) => ({
+      paper,
+      paperList: [toMeta(paper), ...state.paperList],
+      selection: { kind: 'paper' },
+      past: [],
+      future: [],
+    }))
   },
 
   undo: () => {

@@ -7,6 +7,7 @@ import {
   Plus,
   Printer,
   Redo2,
+  ScanText,
   Trash2,
   Undo2,
   ZoomIn,
@@ -17,6 +18,7 @@ import { paperTemplates } from '../data/templates'
 import { formatTime, paperScore } from '../utils/format'
 import { exportPaperJson } from '../utils/transfer'
 import { SmartImportDialog } from './SmartImportDialog'
+import { ScanImportDialog } from './ScanImportDialog'
 
 export function TopBar() {
   const paper = usePaperStore((s) => s.paper)
@@ -43,6 +45,7 @@ export function TopBar() {
 
   const [menuOpen, setMenuOpen] = useState(false)
   const [pasteOpen, setPasteOpen] = useState(false)
+  const [scanOpen, setScanOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleExportJson = async () => {
@@ -181,6 +184,10 @@ export function TopBar() {
           <ClipboardPaste size={16} />
         </button>
 
+        <button type="button" className="icon-button" title="扫描识别（BYOK）" onClick={() => setScanOpen(true)}>
+          <ScanText size={16} />
+        </button>
+
         <button type="button" className="icon-button" title="导入 JSON" onClick={() => fileInputRef.current?.click()}>
           <FileUp size={16} />
         </button>
@@ -206,6 +213,7 @@ export function TopBar() {
       </div>
 
       {pasteOpen ? <SmartImportDialog onClose={() => setPasteOpen(false)} /> : null}
+      {scanOpen ? <ScanImportDialog onClose={() => setScanOpen(false)} /> : null}
     </header>
   )
 }

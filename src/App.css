@@ -959,6 +959,26 @@
   font-size: 15px;
 }
 
+.dialog__title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.dialog__title > svg {
+  color: var(--accent);
+}
+
+.dialog__title > div {
+  display: grid;
+  gap: 2px;
+}
+
+.dialog__title span {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
 .dialog__textarea {
   width: 100%;
   padding: 8px 10px;
@@ -998,6 +1018,222 @@
   border-radius: 4px;
   background: rgba(24, 24, 27, 0.06);
   font-size: 0.92em;
+}
+
+/* ============ 对话框（扫描识别 / BYOK） ============ */
+.dialog--scan {
+  width: min(760px, 100%);
+  gap: 12px;
+}
+
+.scan-dropzone {
+  min-height: 112px;
+  padding: 18px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  background: var(--bg);
+  color: var(--ink-soft);
+  cursor: pointer;
+  text-align: center;
+}
+
+.scan-dropzone:hover,
+.scan-dropzone:focus-visible,
+.scan-dropzone.is-dragging {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  outline: none;
+}
+
+.scan-dropzone strong {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.scan-dropzone span {
+  font-size: 11px;
+}
+
+.scan-file-list {
+  max-height: 132px;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.scan-file-list li {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 2px 4px 2px 9px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-soft);
+}
+
+.scan-file-list__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.scan-file-list small {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.scan-config {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.scan-config__heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.scan-config__heading svg {
+  color: var(--ink-soft);
+}
+
+.scan-config__heading span {
+  margin-left: auto;
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.scan-config .panel-hint {
+  margin: 0;
+}
+
+.scan-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.scan-progress > div {
+  display: grid;
+  gap: 2px;
+}
+
+.scan-progress strong {
+  font-size: 12px;
+}
+
+.scan-progress span {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.is-spinning {
+  animation: scan-spin 0.9s linear infinite;
+}
+
+@keyframes scan-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.scan-error {
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.scan-result {
+  display: grid;
+  gap: 10px;
+}
+
+.scan-result__summary {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+}
+
+.scan-result__summary > span {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.scan-result__summary strong {
+  font-size: 15px;
+}
+
+.scan-result__summary small {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.scan-result__sections {
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none;
+  display: grid;
+  gap: 3px;
+}
+
+.scan-result__sections li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.scan-result__sections small {
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.scan-warning {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.dialog__footer--split {
+  justify-content: space-between;
+}
+
+.dialog__footer--split > div {
+  display: flex;
+  gap: 8px;
 }
 
 /* ============ 图片编辑器（属性面板） ============ */
@@ -1065,6 +1301,34 @@
 
   .sidebar--left {
     display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .dialog-backdrop {
+    padding: 12px;
+  }
+
+  .dialog--scan {
+    padding: 14px;
+  }
+
+  .scan-config .field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .scan-config__heading {
+    flex-wrap: wrap;
+  }
+
+  .scan-config__heading span {
+    width: 100%;
+    margin-left: 21px;
+  }
+
+  .dialog__footer--split,
+  .dialog__footer--split > div {
+    flex-wrap: wrap;
   }
 }
 
