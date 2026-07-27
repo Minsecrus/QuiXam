@@ -1,75 +1,46 @@
-# React + TypeScript + Vite
+# QuiXam · 试卷编排工作台
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+面向中学教师的低门槛试卷编排平台。当前聚焦**高中**，格式对齐中国试卷惯例（高考卷版式）。
 
-Currently, two official plugins are available:
+打开即是一张符合规范的试卷：题号全卷连续、大题序号"一、二、三"、分值自动汇总校验、选项按宽度自动排 4/2/1 列、字体按部位自动套用（黑体做结构、宋体做内容、西文自动落 Times New Roman）——教师只管内容，排版交给系统。
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 功能
 
-## React Compiler
+- 三栏工作台：结构导航 / 试卷画布（所见即所得）/ 属性面板
+- 题型：单选、多选、填空、解答（答题区留白）、**材料题**（共享材料 + 子题，覆盖阅读理解/古诗鉴赏；材料楷体、`#` 居中标题、`@` 仿宋作者行）
+- `$...$` 行内 KaTeX 公式（题干、选项、答案均可用）
+- 题目附图（存 IndexedDB，导出 JSON 时内联 base64）
+- 撤销 / 重做（Ctrl+Z / Ctrl+Y，连续输入合并为一步）
+- 粘贴导入：从 Word 复制整卷文本，自动拆出大题 / 题目 / 选项 / 分值
+- 多试卷管理，IndexedDB 自动保存（本地优先，无需注册）
+- 内置模板：空白卷 / 2024 年高考综合改革适应性测试数学、语文、英语完整卷
+- JSON 导入导出（备份与教师间交换）
+- **真分页预览**：画布上就是一页一页的纸，屏幕所见的每一页即打印出来的每一页；每页带密封线与"第 X 页 共 Y 页"页脚。内容绝不溢出页边——语文/英语文章材料可从任意文本行续到下一页，答题区按行切、留白按高度切、其余先换页；"整题不跨页""大题标题不落单"是可开关的偏好
+- 一键打印 / 导出 PDF：A4 单栏或 **A3 横向两栏（8K 对折卷）**，可选**密封线**，教师版附参考答案另起一页
+- 排版档位：正文字体（宋/楷/黑）、字号（五号/小四/四号）、行距
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+## 开发
 
-Note: This will impact Vite dev & build performances.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+pnpm install
+pnpm dev      # 开发服务器
+pnpm build    # 类型检查 + 构建
+pnpm lint     # ESLint
+pnpm test     # 单元测试（vitest）
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+技术栈：React 19 + TypeScript + Vite（React Compiler 已启用）、zustand、idb、KaTeX。
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 内置真题来源
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+三科内置卷均为教育部教育考试院命制并公开的 **2024 年高考综合改革适应性测试**，不是自编模拟题：
+
+- [语文原卷（中国教育考试网）](https://www.neea.edu.cn/html1/report/2401/376-1.htm)，模板采用河南、黑龙江、甘肃的“交错带”作文版本
+- [数学原卷（中国教育考试网）](https://www.neea.edu.cn/xhtml1/report/2401/426-1.htm)
+- [英语原卷（中国教育考试网）](https://www.neea.edu.cn/html1/report/2401/499-1.htm)
+
+原卷没有随题面公开完整主观题解答，因此模板不补写自编范文或解答；答案页只保留核验过的客观题、名句默写和语法填空答案。
+
+## 架构与路线图
+
+见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)：分层架构（内容/样式/渲染/数据/状态）、中国试卷字体规范表、M1–M4 演进路线（材料题与富文本 → 题库 → 协作与 BYOK OCR/AI）。

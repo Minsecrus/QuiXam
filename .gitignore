@@ -20,7 +20,8 @@ coverage
 .turbo
 .cache
 
-# Editor directories and files
+# Editor / local tooling directories and files
+.claude
 .vscode/*
 !.vscode/extensions.json
 .idea

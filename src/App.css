@@ -1,392 +1,1132 @@
-.editor-shell {
-  min-height: 100vh;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  background:
-    radial-gradient(circle at top, rgba(183, 212, 200, 0.18), transparent 28%),
-    linear-gradient(180deg, #f7f2e8 0%, #efe7d7 100%);
+/* ============ 设计变量：monochrome + 单点缀色 ============ */
+:root {
+  --ink: #18181b;
+  --ink-soft: #71717a;
+  --line: #e4e4e7;
+  --bg: #f4f4f5;
+  --card: #ffffff;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: rgba(79, 70, 229, 0.08);
+  --danger: #dc2626;
+  --danger-soft: rgba(220, 38, 38, 0.08);
+  /* 侧栏灰底上的可交互表面：比底色略深，无需描边即可辨识 */
+  --surface: rgba(24, 24, 27, 0.04);
+  --surface-hover: rgba(24, 24, 27, 0.08);
+
+  /* 试卷字体栈：西文置栈首，中文字体缺西文字形时自动回退 → 天然"中宋西 Times"混排 */
+  --font-hei: 'SimHei', 'Heiti SC', 'Microsoft YaHei', sans-serif;
+  --font-song: 'Times New Roman', 'SimSun', 'Songti SC', 'STSong', serif;
+  --font-kai: 'Times New Roman', 'KaiTi', 'Kaiti SC', 'STKaiti', serif;
+  --font-fang: 'Times New Roman', 'FangSong', 'STFangsong', serif;
 }
 
+/* ============ 应用外壳 ============ */
+.app-loading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+}
+
+.editor-shell {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: var(--bg);
+}
+
+/* ============ 顶栏 ============ */
 .topbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 24px;
-  padding: 18px 28px;
-  border-bottom: 1px solid rgba(34, 31, 24, 0.08);
-  background: rgba(250, 247, 240, 0.88);
-  backdrop-filter: blur(18px);
+  gap: 16px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
 }
 
-.topbar__brand,
-.topbar__actions {
+.topbar__brand {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
 }
 
 .brand-mark {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
   display: grid;
   place-items: center;
-  font-size: 15px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.16em;
-  color: #f9f6ef;
-  background: linear-gradient(135deg, #2b5d4f 0%, #183730 100%);
-  box-shadow: 0 12px 24px rgba(24, 55, 48, 0.2);
+  letter-spacing: 0.06em;
+  color: #fff;
+  background: var(--ink);
 }
 
-.eyebrow {
-  margin: 0 0 4px;
-  color: #5d665f;
+.brand-name {
+  font-weight: 650;
+  font-size: 14px;
+}
+
+.topbar__center {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+}
+
+.paper-select {
+  max-width: 280px;
+  min-width: 140px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.paper-select:hover {
+  background: var(--bg);
+}
+
+.save-indicator {
   font-size: 12px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.topbar h1 {
-  margin: 0;
-  font-size: 24px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  min-width: 88px;
 }
 
 .topbar__actions {
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
+/* ============ 按钮 ============ */
 .ghost-button,
 .primary-button,
-.inline-button,
 .quick-action,
-.outline-item {
+.outline-item,
+.icon-button,
+.mini-button,
+.menu-item,
+.zoom-value {
   border: 0;
   cursor: pointer;
   font: inherit;
+  color: inherit;
+  background: none;
 }
 
 .ghost-button,
 .primary-button {
-  min-height: 42px;
-  padding: 0 16px;
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 13px;
 }
 
 .ghost-button {
-  color: #253029;
-  background: rgba(255, 252, 245, 0.92);
-  box-shadow: inset 0 0 0 1px rgba(37, 48, 41, 0.12);
+  color: var(--ink-soft);
+}
+
+.ghost-button:hover {
+  background: var(--bg);
+  color: var(--ink);
 }
 
 .primary-button {
-  color: #f7f2e8;
-  background: linear-gradient(135deg, #a24a2b 0%, #7f3118 100%);
-  box-shadow: 0 12px 20px rgba(127, 49, 24, 0.24);
+  color: #fff;
+  background: var(--accent);
 }
 
+.primary-button:hover {
+  background: var(--accent-hover);
+}
+
+.primary-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  color: var(--ink-soft);
+}
+
+.icon-button:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.icon-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.icon-button:disabled:hover {
+  background: none;
+  color: var(--ink-soft);
+}
+
+.icon-button.is-danger:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.mini-button,
+.quick-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 7px;
+  background: var(--surface);
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.mini-button:hover,
+.quick-action:hover {
+  color: var(--ink);
+  background: var(--surface-hover);
+}
+
+/* 新建模板下拉 */
+.menu-anchor {
+  position: relative;
+}
+
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.menu-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 41;
+  min-width: 240px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: 0 8px 24px rgba(24, 24, 27, 0.14);
+  display: grid;
+  gap: 2px;
+}
+
+.menu-item {
+  display: grid;
+  gap: 1px;
+  padding: 8px 10px;
+  text-align: left;
+  border-radius: 7px;
+  font-size: 13px;
+}
+
+.menu-item:hover {
+  background: var(--bg);
+}
+
+.menu-item small {
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+/* ============ 工作区三栏 ============ */
 .workspace {
   min-height: 0;
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 320px;
-  gap: 20px;
-  padding: 20px;
-}
-
-.sidebar,
-.canvas-panel {
-  min-height: 0;
+  grid-template-columns: 240px minmax(0, 1fr) 300px;
+  gap: 12px;
+  padding: 12px;
 }
 
 .sidebar {
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  padding: 4px 2px;
 }
 
+/* 面板不再是卡片：平铺分组，组间发丝线分隔 */
 .panel {
-  padding: 18px;
-  border: 1px solid rgba(44, 39, 30, 0.08);
-  border-radius: 24px;
-  background: rgba(255, 252, 245, 0.84);
-  box-shadow: 0 18px 40px rgba(78, 62, 35, 0.08);
+  padding: 12px 6px;
+}
+
+.panel + .panel {
+  border-top: 1px solid var(--line);
 }
 
 .panel__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .panel h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  letter-spacing: 0.02em;
 }
 
-.inline-button {
-  padding: 0;
-  color: #8b4d2a;
-  background: transparent;
+.panel-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-soft);
 }
 
+/* 结构列表 */
 .outline-list,
-.property-list,
 .quick-actions {
   display: grid;
-  gap: 10px;
+  gap: 4px;
+}
+
+.quick-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .outline-item {
   width: 100%;
-  padding: 14px;
+  padding: 7px 9px;
   text-align: left;
-  border-radius: 18px;
-  background: #fffdf8;
-  box-shadow: inset 0 0 0 1px rgba(44, 39, 30, 0.08);
+  border-radius: 7px;
+  font-size: 13px;
 }
 
-.outline-item span,
-.property-item strong {
+.outline-item:hover {
+  background: var(--bg);
+}
+
+.outline-item span {
   display: block;
 }
 
-.outline-item small,
-.property-item span,
-.toolbar-label,
-.paper-meta,
-.paper-header__school,
-.paper-section__description {
-  color: #6b6559;
+.outline-item small {
+  color: var(--ink-soft);
+  font-size: 11px;
 }
 
-.tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.outline-item.is-active {
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
-.tag {
-  padding: 8px 12px;
-  border-radius: 999px;
-  color: #2b4439;
-  background: rgba(183, 212, 200, 0.35);
+.outline-item.is-active small {
+  color: var(--accent);
+  opacity: 0.75;
 }
 
-.canvas-panel {
+.quick-action {
+  height: 30px;
+}
+
+/* ============ 表单 ============ */
+.field-list {
   display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 16px;
+  gap: 10px;
 }
 
-.canvas-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  border-radius: 24px;
-  background: rgba(255, 252, 245, 0.78);
-  border: 1px solid rgba(44, 39, 30, 0.08);
+.field {
+  display: grid;
+  gap: 4px;
 }
 
-.canvas-toolbar__group {
-  display: flex;
-  align-items: baseline;
+.field > span {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* 侧栏底色本身是浅灰，输入框必须比它深才看得出边界（白底白框对比只有 1.1:1） */
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 7px;
+  border: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.field input:hover,
+.field textarea:hover,
+.field select:hover {
+  background: var(--surface-hover);
+}
+
+.field textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
-.toolbar-label {
+.field--inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field--inline input {
+  width: auto;
+  accent-color: var(--accent);
+}
+
+.field--inline span {
   font-size: 13px;
+  color: var(--ink);
+}
+
+.option-editor {
+  display: grid;
+  gap: 4px;
+}
+
+.option-editor__row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.option-editor__row input {
+  width: 100%;
+  padding: 5px 8px;
+  border-radius: 7px;
+  border: 0;
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.option-editor__row input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.option-editor__label {
+  width: 16px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.button-row {
+  display: flex;
+  gap: 2px;
+}
+
+/* ============ 画布 ============ */
+.canvas-panel {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.topbar__divider {
+  width: 1px;
+  height: 18px;
+  background: var(--line);
+  margin: 0 4px;
+}
+
+.score-indicator {
+  font-size: 12px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.zoom-value {
+  min-width: 42px;
+  text-align: center;
+  padding: 4px 0;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.zoom-value:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.score-warn {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.switch-label {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.switch-label input {
+  accent-color: var(--accent);
+  width: 14px;
+  height: 14px;
 }
 
 .paper-stage {
   min-height: 0;
   overflow: auto;
-  padding: 12px;
-  border-radius: 32px;
-  background:
-    linear-gradient(180deg, rgba(43, 93, 79, 0.08), transparent),
-    rgba(211, 223, 216, 0.34);
+  padding: 20px;
+  border-radius: 10px;
+  background: #e9e9eb;
 }
 
-.paper-sheet {
-  width: min(100%, 820px);
+.paper-scale {
+  width: fit-content;
   margin: 0 auto;
-  padding: 44px 56px 56px;
-  background: #fffefb;
-  color: #1e1f1b;
-  box-shadow:
-    0 24px 60px rgba(53, 45, 28, 0.12),
-    0 2px 0 rgba(53, 45, 28, 0.05);
 }
 
-.paper-header {
-  padding-bottom: 20px;
-  border-bottom: 2px solid #27231a;
+/* ============ 试卷纸面 ============ */
+/* 字号档位：五号 10.5pt / 小四 12pt / 四号 14pt */
+/* 排版档位：定义成裸类，页面与离屏测量容器都要用 */
+.size-small { --paper-font-size: 10.5pt; }
+.size-medium { --paper-font-size: 12pt; }
+.size-large { --paper-font-size: 14pt; }
+.lh-compact { --paper-line-height: 1.6; }
+.lh-normal { --paper-line-height: 1.9; }
+.lh-loose { --paper-line-height: 2.2; }
+.body-song { --paper-body-font: var(--font-song); }
+.body-kai { --paper-body-font: var(--font-kai); }
+.body-hei { --paper-body-font: var(--font-hei); }
+
+/* 纸面排印：测量容器必须与真实页面用同一套，否则量出来的高度不作数 */
+.paper-type {
+  color: #111;
+  font-family: var(--paper-body-font);
+  font-size: var(--paper-font-size);
+  line-height: var(--paper-line-height);
 }
 
-.paper-header h2 {
-  margin: 8px 0 12px;
-  font-size: 32px;
-  text-align: center;
-  letter-spacing: 0.08em;
+/*
+ * 纸面几何一律用毫米，且屏幕与打印共用同一组数值 —— 这是"所见即所得"的前提。
+ * 配合 @page { margin: 0 }（由 PaperCanvas 动态注入），纸面自身的 padding 即页边距。
+ * 具体尺寸由 paperGeometry() 算出后以内联样式下发，CSS 只管外观。
+ */
+.paper-page {
+  position: relative;
+  margin: 0 auto;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(24, 24, 27, 0.12), 0 8px 24px rgba(24, 24, 27, 0.08);
 }
 
-.paper-header__school {
-  text-align: center;
+.paper-page + .paper-page {
+  margin-top: 24px;
 }
 
-.paper-meta {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 14px;
+/* 每块自成 BFC：外边距不外溢，页面里的高度与测量容器里量到的严格相等 */
+.p-block {
+  display: flow-root;
 }
 
-.notice-block {
-  margin-top: 20px;
-  padding: 16px 18px;
-  border: 1px solid rgba(39, 35, 26, 0.18);
-  background: #fbf8f1;
-}
-
-.notice-block strong {
-  display: block;
-  margin-bottom: 10px;
-}
-
-.notice-block ol {
-  margin: 0;
-  padding-left: 20px;
-}
-
-.paper-section {
-  margin-top: 28px;
-}
-
-.paper-section__title {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-}
-
-.paper-section__title h3 {
-  margin: 0;
-  font-size: 22px;
-}
-
-.paper-section__description {
-  margin: 8px 0 0;
-}
-
-.question-list {
+.page-columns {
   display: grid;
-  gap: 18px;
+  align-items: start;
+}
+
+.page-footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 9pt;
+  color: #111;
+}
+
+/* 离屏测量容器：不可见、不参与布局、不被打印 */
+.paper-measure {
+  position: absolute;
+  top: 0;
+  left: -10000px;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.font-hei {
+  font-family: var(--font-hei);
+  font-weight: 400;
+}
+
+/* 可点选区域的选中态（仅屏幕） */
+.p-header,
+.q-block {
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.p-header.is-selected,
+.q-block.is-selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  background: var(--accent-soft);
+}
+
+/* 卷头：底部两角必须是直角，否则圆角会让分隔线两端斜着收窄 */
+.p-header {
+  padding-bottom: 14px;
+  border-bottom: 2px solid #111;
+  border-radius: 4px 4px 0 0;
+  text-align: center;
+}
+
+.p-header__school {
+  margin: 0 0 6px;
+  font-size: 0.95em;
+}
+
+.p-header__title {
+  margin: 4px 0 8px;
+  font-size: 22pt;
+  letter-spacing: 0.12em;
+}
+
+.p-header__subtitle {
+  margin: 0 0 8px;
+}
+
+.p-header__meta {
+  margin: 0;
+  font-size: 0.9em;
+}
+
+/* 注意事项 */
+.p-notice {
   margin-top: 14px;
+  padding: 10px 14px;
+  border: 1px solid #333;
+  font-size: 0.9em;
+  line-height: 1.7;
 }
 
-.question-card {
-  padding: 16px 18px;
-  border: 1px solid rgba(39, 35, 26, 0.1);
-  background: #fffefc;
+.p-notice ol {
+  margin: 4px 0 0;
+  padding-left: 1.6em;
 }
 
-.question-card__head {
+/* 大题标题：自成一个排版块，可单独选中 */
+.p-section__title {
+  margin: 14px 0 6px;
+  padding: 2px 4px;
+  font-weight: 400;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.p-section__title.is-selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  background: var(--accent-soft);
+}
+
+.p-section__empty {
+  margin: 6px 0;
+  padding: 8px;
+  color: var(--ink-soft);
+  font-family: inherit;
+  font-size: 0.85em;
+  text-align: center;
+}
+
+/* 题目 */
+/* flow-root：把右浮动附图关在本题内，否则浮动会逸出并挤压后续题目，
+   且其高度不计入 break-inside 判断，打印时可能被页边界横切 */
+.q-block {
+  position: relative;
+  display: flow-root;
+  padding: 4px 6px;
+  margin: 2px 0;
+}
+
+.q-stem {
+  white-space: pre-line;
+}
+
+/* 题号与选项标号用全角句点，自带字身宽，无需再补间距 */
+.q-score {
+  margin-right: 0.2em;
+}
+
+.q-options {
+  display: grid;
+  gap: 2px 16px;
+  margin-top: 2px;
+  padding-left: 1.5em;
+}
+
+.q-option {
+  display: flex;
+  gap: 0.2em;
+  min-width: 0;
+}
+
+.q-option__text {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* 材料题：材料区楷体，与题目区分；@ 作者行仿宋（古诗惯例） */
+.material-block {
+  font-family: var(--font-kai);
+  margin: 2px 0 6px;
+  padding: 2px 4px;
+}
+
+.material-block.is-center {
+  text-align: center;
+}
+
+/* 材料按自然段拆成独立排版块后，每段用这个壳；
+   相邻段之间不加边距，读起来仍是连贯的一整段文字 */
+.material-part {
+  position: relative;
+  font-family: var(--font-kai);
+  padding: 0 4px;
+  cursor: pointer;
+}
+
+.material-part.is-center {
+  text-align: center;
+}
+
+.material-part p {
+  margin: 0;
+}
+
+/* 跨段的选中态用底色而非描边：描边逐段画会把连续的材料切成一节一节 */
+.material-part.is-selected {
+  background: var(--accent-soft);
+}
+
+.material-part:hover .q-actions {
+  opacity: 1;
+}
+
+.material-block p {
+  margin: 0;
+}
+
+.material-line {
+  white-space: pre-wrap;
+}
+
+/* 楷体是单字重、且全局禁用了字体合成，加粗无效，改用字号与字距做层级 */
+.material-title {
+  text-align: center;
+  font-size: 1.1em;
+  letter-spacing: 0.2em;
+  margin-bottom: 0.3em;
+}
+
+.material-author {
+  text-align: center;
+  font-family: var(--font-fang);
+  font-size: 0.92em;
+}
+
+/* 题目附图 */
+.q-images {
+  margin: 4px 0;
+}
+
+.q-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.q-image.is-center {
+  margin: 4px auto;
+}
+
+.q-image.is-right {
+  float: right;
+  margin: 4px 0 4px 12px;
+}
+
+.asset-loading {
+  color: var(--ink-soft);
+  font-size: 0.85em;
+}
+
+/* 缺图必须在打印稿上可见，否则版面照样连贯、教师发现不了少了一张图 */
+.asset-missing {
+  display: inline-block;
+  padding: 0.4em 0.8em;
+  border: 1px dashed #999;
+  color: #666;
+  font-size: 0.85em;
+}
+
+/* 解答题答题区 */
+/*
+ * 答题横线：每条一格、格高即书写高度、线在格底。
+ * 容器不能带外边距或行间距 —— 分页时要按"总高 ÷ 行数"推出行高再整行切分，
+ * 一旦掺入 margin/gap，切出来的片高就与实际渲染高度对不上，可能溢出页面。
+ */
+.answer-area {
+  margin: 0;
+  padding: 0;
+}
+
+.answer-line {
+  display: block;
+  height: 2.2em;
+  border-bottom: 0.75pt solid #000;
+  box-sizing: border-box;
+}
+
+/* 空白答题区（数学、物理）：纯留白，可在任意高度切开 */
+.answer-space {
+  margin: 0;
+}
+
+/* 悬浮题目操作（仅屏幕） */
+.q-actions {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--card);
+  box-shadow: 0 2px 10px rgba(24, 24, 27, 0.14);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  z-index: 5;
+}
+
+.q-block:hover .q-actions {
+  opacity: 1;
+}
+
+/* 复用 .icon-button 的规则体，这里只收窄尺寸 */
+.q-actions .icon-button {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+}
+
+/* 参考答案（教师版） */
+.answer-key__title {
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #111;
+  text-align: center;
+  font-size: 1.3em;
+  font-weight: 400;
+}
+
+.answer-key__section p {
+  margin: 8px 0 2px;
+}
+
+/* 选择题答案横排合并成一行，与真实答案页一致 */
+.answer-key__row {
+  margin: 2px 0 6px;
+  padding-left: 1em;
+}
+
+.answer-key__item {
+  margin: 2px 0;
+  padding-left: 1em;
+}
+
+/* ============ 密封线 ============ */
+/* 现在每一页各自渲染一条，装订区宽度由 paperGeometry 下发 */
+.seal-line {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 26mm;
   display: flex;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
+  padding: 20mm 1.5mm 20mm 4mm;
+  font-size: 10.5pt;
 }
 
-.question-card__stem {
-  margin: 0;
-  white-space: pre-line;
-  line-height: 1.8;
+.seal-line__fields,
+.seal-line__rule {
+  writing-mode: vertical-rl;
+  text-align: center;
+  white-space: nowrap;
 }
 
-.option-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 18px;
-  margin-top: 12px;
-}
-
-.option-item {
+.seal-line__fields {
   display: flex;
+  align-items: center;
+  gap: 8mm;
+}
+
+/* 竖排下：block-size 是线长，border-inline-end 是那条竖线 */
+.seal-field {
+  display: inline-flex;
+  align-items: center;
+}
+
+.seal-blank {
+  display: inline-block;
+  block-size: 22mm;
+  inline-size: 1em;
+  border-inline-end: 1px solid #000;
+}
+
+.seal-line__rule {
+  border-left: 1.5px dashed #333;
+  padding-left: 1.5mm;
+  letter-spacing: 0.2em;
+  color: #333;
+}
+
+/* ============ 对话框（粘贴导入） ============ */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(24, 24, 27, 0.4);
+}
+
+.dialog {
+  width: min(680px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 16px 48px rgba(24, 24, 27, 0.2);
+  display: grid;
+  gap: 10px;
+}
+
+.dialog__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.dialog__header h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.dialog__textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 0;
+  background: var(--bg);
+  resize: vertical;
+  line-height: 1.6;
+  font-size: 13px;
+}
+
+.dialog__textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.dialog__preview {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--bg);
+  font-size: 12px;
+}
+
+.dialog__preview ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.dialog__footer {
+  display: flex;
+  justify-content: flex-end;
   gap: 8px;
 }
 
-.answer-area {
+.dialog code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(24, 24, 27, 0.06);
+  font-size: 0.92em;
+}
+
+/* ============ 图片编辑器（属性面板） ============ */
+.image-editor {
   display: grid;
-  gap: 14px;
-  margin-top: 18px;
+  gap: 6px;
 }
 
-.answer-area span {
-  display: block;
-  border-bottom: 1px solid rgba(39, 35, 26, 0.24);
-  min-height: 24px;
+.image-editor__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.property-item {
-  padding: 12px 14px;
-  border-radius: 16px;
-  background: #fffdf8;
-  box-shadow: inset 0 0 0 1px rgba(44, 39, 30, 0.08);
+.image-thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: var(--card);
+  border: 1px solid var(--line);
 }
 
-.quick-action {
-  min-height: 44px;
-  padding: 0 14px;
-  text-align: left;
-  border-radius: 16px;
-  color: #1f271f;
-  background: linear-gradient(180deg, #fdfaf3 0%, #f3ecd9 100%);
-  box-shadow: inset 0 0 0 1px rgba(44, 39, 30, 0.08);
+.image-editor__width {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  color: var(--ink-soft);
 }
 
-@media (max-width: 1200px) {
+.image-editor__width input {
+  width: 52px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 0;
+  background: var(--surface);
+  font-size: 12px;
+}
+
+.image-editor__row select {
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 0;
+  background: var(--surface);
+  font-size: 12px;
+}
+
+/* KaTeX 行内公式与正文基线对齐 */
+.math-inline .katex {
+  font-size: 1.02em;
+}
+
+/* ============ 响应式 ============ */
+@media (max-width: 1280px) {
   .workspace {
-    grid-template-columns: 240px minmax(0, 1fr);
-  }
-
-  .sidebar--right {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 220px minmax(0, 1fr) 280px;
   }
 }
 
-@media (max-width: 920px) {
+@media (max-width: 1024px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+
+  .sidebar--left {
+    display: none;
+  }
+}
+
+/* ============ 打印 ============ */
+/* @page 的 size 由 PaperCanvas 按纸张配置动态注入；margin 恒为 0，页边距由纸面自身的
+   padding 提供，这样屏幕与打印共用同一组毫米数值。 */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  html,
+  body,
+  .editor-shell {
+    background: #fff;
+  }
+
   .topbar,
-  .workspace {
-    padding: 16px;
+  .sidebar,
+  .no-print {
+    display: none !important;
   }
 
-  .workspace {
-    grid-template-columns: 1fr;
+  .editor-shell,
+  .workspace,
+  .canvas-panel {
+    display: block;
+    height: auto;
+    padding: 0;
+    margin: 0;
   }
 
-  .sidebar--right {
-    grid-template-columns: 1fr;
+  .paper-stage {
+    overflow: visible;
+    padding: 0;
+    border: 0;
+    background: none;
+    border-radius: 0;
   }
 
-  .paper-sheet {
-    padding: 28px 20px 32px;
+  .paper-scale {
+    zoom: 1 !important; /* 打印强制 100%，覆盖屏幕缩放 */
+    width: auto;
   }
 
-  .paper-meta,
-  .canvas-toolbar,
-  .topbar {
-    flex-direction: column;
-    align-items: flex-start;
+  /* 内容已按页切好，每个 .paper-page 恰好是一张纸；
+     不再需要 break-inside/break-after 这类交给浏览器分页的提示。 */
+  .paper-page {
+    margin: 0;
+    box-shadow: none;
+    break-inside: avoid;
   }
 
-  .option-grid {
-    grid-template-columns: 1fr;
+  .paper-page + .paper-page {
+    break-before: page;
+  }
+
+  .p-header.is-selected,
+  .p-section__title.is-selected,
+  .q-block.is-selected {
+    outline: none;
+    background: none;
   }
 }
