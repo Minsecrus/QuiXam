@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" role="img" aria-labelledby="title desc">
+  <title id="title">某地区工业增长率折线图</title>
+  <desc id="desc">全国与沿海城市从 1963 年到 1977 年工业增长率变化</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#111"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="#111" stroke-width="2">
+    <path d="M88 275H710M105 298V30" marker-end="url(#arrow)"/>
+    <path d="M110 196L170 160L225 170L278 250L330 72L390 126L455 176L515 150L565 238L615 142L685 164" stroke-width="3"/>
+    <path d="M110 208L170 176L225 188L278 225L330 148L390 166L455 191L515 168L565 191L615 184L685 151" stroke-width="2" stroke-dasharray="8 5"/>
+    <path d="M105 225H710M105 175H710M105 125H710M105 75H710" stroke="#aaa" stroke-width="1"/>
+  </g>
+  <g font-family="Times New Roman, SimSun, serif" font-size="17" fill="#111">
+    <text x="20" y="44">增长率/%</text><text x="83" y="280">−10</text>
+    <text x="92" y="230">0</text><text x="84" y="180">10</text><text x="84" y="130">20</text><text x="84" y="80">30</text>
+    <text x="100" y="317">1963</text><text x="260" y="317">1967</text><text x="445" y="317">1973</text><text x="660" y="317">1977</text>
+    <text x="536" y="44">全国</text><line x1="595" y1="38" x2="655" y2="38" stroke="#111" stroke-width="3"/>
+    <text x="536" y="70">沿海城市</text><line x1="625" y1="64" x2="685" y2="64" stroke="#111" stroke-width="2" stroke-dasharray="8 5"/>
+  </g>
+</svg>

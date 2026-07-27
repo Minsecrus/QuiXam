@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 330" role="img" aria-labelledby="title">
+  <title id="title">制取干燥一氧化氮并制备亚硝酸盐的装置</title>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#111"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="#111" stroke-width="2">
+    <rect x="25" y="78" width="130" height="178" rx="12"/><path d="M45 205Q90 240 135 205V250"/>
+    <path d="M90 42V190M70 42H110"/><path d="M155 135H210" marker-end="url(#arrow)"/>
+    <rect x="215" y="78" width="130" height="178" rx="12"/><path d="M235 205Q280 240 325 205V250"/>
+    <path d="M280 42V190M260 42H300"/><path d="M345 135H400" marker-end="url(#arrow)"/>
+    <rect x="405" y="78" width="130" height="178" rx="12"/><path d="M425 210H515"/><path d="M535 135H590" marker-end="url(#arrow)"/>
+    <rect x="595" y="78" width="130" height="178" rx="12"/><path d="M615 210H705"/>
+    <path d="M725 135H780" marker-end="url(#arrow)"/>
+    <rect x="785" y="78" width="130" height="178" rx="12"/><path d="M805 210H895"/>
+    <path d="M915 135H980" marker-end="url(#arrow)"/>
+    <path d="M985 78V256H1055V78"/>
+  </g>
+  <g font-family="Times New Roman, SimSun, serif" font-size="17" fill="#111" text-anchor="middle">
+    <text x="90" y="290">Ⅰ　N₂ 发生器</text><text x="280" y="290">Ⅱ　NO 发生器</text>
+    <text x="470" y="290">Ⅲ　干燥</text><text x="660" y="290">Ⅳ　CaO₂</text>
+    <text x="850" y="290">Ⅴ　安全瓶</text><text x="1020" y="290">Ⅵ　尾气吸收</text>
+    <text x="90" y="68">a　b</text><text x="280" y="68">c　d</text><text x="470" y="68">e　f</text>
+    <text x="660" y="68">g　h</text><text x="1020" y="68">酸性氧化剂</text>
+  </g>
+</svg>

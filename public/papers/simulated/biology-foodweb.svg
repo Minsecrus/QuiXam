@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 260">
+  <defs>
+    <marker id="foodArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0l8 4-8 4z" fill="#30435d"/>
+    </marker>
+  </defs>
+  <rect width="650" height="260" fill="#fff"/>
+  <g fill="#f4f8fc" stroke="#30435d" stroke-width="2">
+    <rect x="35" y="105" width="90" height="44" rx="10"/>
+    <rect x="180" y="35" width="110" height="44" rx="10"/>
+    <rect x="180" y="175" width="110" height="44" rx="10"/>
+    <rect x="355" y="35" width="80" height="44" rx="10"/>
+    <rect x="355" y="175" width="80" height="44" rx="10"/>
+    <rect x="510" y="105" width="90" height="44" rx="10"/>
+  </g>
+  <g stroke="#30435d" stroke-width="2.5" fill="none" marker-end="url(#foodArrow)">
+    <path d="M125 115l55-46"/><path d="M125 139l55 48"/>
+    <path d="M290 57h65"/><path d="M290 196h65"/>
+    <path d="M287 73l76 98"/><path d="M435 57l75 53"/>
+    <path d="M435 196l75-54"/><path d="M395 175V82"/>
+  </g>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="17" fill="#222" text-anchor="middle">
+    <text x="80" y="133">水草</text>
+    <text x="235" y="63">浮游动物</text>
+    <text x="235" y="203">底栖动物</text>
+    <text x="395" y="63">鱼 A</text>
+    <text x="395" y="203">鱼 B</text>
+    <text x="555" y="133">鱼 C</text>
+  </g>
+</svg>

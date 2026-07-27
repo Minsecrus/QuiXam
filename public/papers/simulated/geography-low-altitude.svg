@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 270">
+  <rect width="700" height="270" fill="#fff"/>
+  <path d="M20 215h660M80 215V80h70v135M190 215V120h55v95M285 215V55h95v160M425 215V95h75v120M545 215V130h65v85" fill="#edf1f5" stroke="#52606f" stroke-width="2"/>
+  <path d="M30 230c130-18 220 18 330 0s200 10 310-5" fill="none" stroke="#3158a6" stroke-width="14" opacity=".5"/>
+  <g fill="#fff" stroke="#30435d" stroke-width="2">
+    <circle cx="120" cy="60" r="18"/><circle cx="340" cy="35" r="18"/><circle cx="570" cy="105" r="18"/>
+  </g>
+  <g stroke="#c24b42" stroke-width="2.5" fill="none" stroke-dasharray="7 5">
+    <path d="M120 60c90-45 150-38 220-25s145 82 230 70"/>
+  </g>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="15" fill="#222" text-anchor="middle">
+    <text x="120" y="65">医</text><text x="340" y="40">物</text><text x="570" y="110">社</text>
+    <text x="350" y="258">需求点、建筑、气象与限制空域叠加选址</text>
+  </g>
+</svg>

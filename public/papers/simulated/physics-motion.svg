@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 250" role="img" aria-labelledby="title desc">
+  <title id="title">分段运动图像</title>
+  <desc id="desc">左侧为位移时间图像，右侧为动能位置图像</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#111"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="#111" stroke-width="2">
+    <path d="M50 205H330M72 225V28" marker-end="url(#arrow)"/>
+    <path d="M72 205Q125 198 155 155L235 82Q270 50 312 42"/>
+    <path d="M155 155V205M235 82V205" stroke-dasharray="5 5" stroke-width="1.3"/>
+    <path d="M390 205H690M412 225V28" marker-end="url(#arrow)"/>
+    <path d="M412 178L505 82L594 154L672 154"/>
+    <path d="M505 82V205M594 154V205" stroke-dasharray="5 5" stroke-width="1.3"/>
+  </g>
+  <g font-family="Times New Roman, SimSun, serif" font-size="20" fill="#111">
+    <text x="316" y="228">t</text><text x="48" y="38">x</text><text x="60" y="224">O</text>
+    <text x="145" y="224">t₁</text><text x="225" y="224">t₂</text>
+    <text x="676" y="228">s</text><text x="382" y="38">Eₖ</text><text x="400" y="224">O</text>
+    <text x="496" y="224">s₀</text><text x="582" y="224">2s₀</text>
+    <text x="32" y="18" font-family="SimHei, sans-serif">图 1　位移—时间</text>
+    <text x="390" y="18" font-family="SimHei, sans-serif">图 2　动能—位置</text>
+  </g>
+</svg>

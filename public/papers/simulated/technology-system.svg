@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 230">
+  <defs>
+    <marker id="sysArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0l8 4-8 4z" fill="#30435d"/>
+    </marker>
+  </defs>
+  <rect width="720" height="230" fill="#fff"/>
+  <g fill="#f7f9fc" stroke="#30435d" stroke-width="2">
+    <rect x="20" y="70" width="110" height="60" rx="10"/>
+    <rect x="170" y="70" width="110" height="60" rx="10"/>
+    <rect x="320" y="70" width="110" height="60" rx="10"/>
+    <rect x="470" y="70" width="110" height="60" rx="10"/>
+    <rect x="620" y="70" width="80" height="60" rx="10"/>
+  </g>
+  <g stroke="#30435d" stroke-width="2.5" fill="none" marker-end="url(#sysArrow)">
+    <path d="M130 100h40"/><path d="M280 100h40"/><path d="M430 100h40"/><path d="M580 100h40"/>
+    <path d="M660 132c-20 74-534 74-585 3"/>
+  </g>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="15" fill="#222" text-anchor="middle">
+    <text x="75" y="94">传感器</text><text x="75" y="116">扫码/输入</text>
+    <text x="225" y="94">网络</text><text x="225" y="116">传输</text>
+    <text x="375" y="94">服务器</text><text x="375" y="116">数据处理</text>
+    <text x="525" y="94">规则判断</text><text x="525" y="116">权限校验</text>
+    <text x="660" y="94">输出</text><text x="660" y="116">执行</text>
+    <text x="360" y="205" font-size="17">信息系统基本数据流</text>
+  </g>
+</svg>

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 230">
+  <defs>
+    <marker id="techBioArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0l8 4-8 4z" fill="#30435d"/>
+    </marker>
+  </defs>
+  <rect width="720" height="230" fill="#fff"/>
+  <g fill="#f7f9fc" stroke="#30435d" stroke-width="2">
+    <rect x="22" y="70" width="105" height="58" rx="12"/>
+    <rect x="164" y="70" width="105" height="58" rx="12"/>
+    <rect x="306" y="70" width="105" height="58" rx="12"/>
+    <rect x="448" y="70" width="105" height="58" rx="12"/>
+    <rect x="590" y="70" width="105" height="58" rx="12"/>
+  </g>
+  <g stroke="#30435d" stroke-width="2.5" marker-end="url(#techBioArrow)">
+    <path d="M127 99h37"/><path d="M269 99h37"/><path d="M411 99h37"/><path d="M553 99h37"/>
+  </g>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="15" fill="#222" text-anchor="middle">
+    <text x="74" y="93">免疫小鼠</text><text x="74" y="115">获取 B 细胞</text>
+    <text x="216" y="93">细胞融合</text><text x="216" y="115">选择培养</text>
+    <text x="358" y="93">克隆化</text><text x="358" y="115">抗体检测</text>
+    <text x="500" y="93">获取 mRNA</text><text x="500" y="115">制备 cDNA</text>
+    <text x="642" y="93">构建载体</text><text x="642" y="115">工程细胞</text>
+    <text x="360" y="190" font-size="17">单克隆抗体与工程细胞构建流程</text>
+  </g>
+</svg>

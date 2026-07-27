@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 300" role="img" aria-labelledby="title">
+  <title id="title">电动机能量转化实验与位置时间图像</title>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#111"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="#111" stroke-width="2">
+    <rect x="55" y="62" width="145" height="70" rx="8"/>
+    <path d="M128 132V216M90 216H166M105 216L128 250L151 216"/>
+    <path d="M200 96H294M294 96V50H365V238H294V192H200"/>
+    <circle cx="294" cy="96" r="18"/><circle cx="294" cy="192" r="18"/>
+    <path d="M365 50H410V238H365M410 82h45v54h-45M410 172h45"/>
+    <path d="M520 248H785M545 270V30" marker-end="url(#arrow)"/>
+    <path d="M545 222L735 72" stroke-width="3"/>
+    <path d="M610 222V248M735 72V248" stroke-dasharray="5 5" stroke-width="1.2"/>
+  </g>
+  <g font-family="Times New Roman, SimSun, serif" font-size="18" fill="#111">
+    <text x="90" y="105">电动机 M</text><text x="95" y="277">重物</text>
+    <text x="286" y="102">A</text><text x="286" y="198">V</text>
+    <text x="422" y="113">R</text><text x="421" y="198">E, r</text>
+    <text x="765" y="270">t/s</text><text x="512" y="42">x/cm</text>
+    <text x="600" y="270">4</text><text x="723" y="270">10</text>
+  </g>
+</svg>

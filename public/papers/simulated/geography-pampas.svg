@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 270">
+  <rect width="680" height="270" fill="#fff"/>
+  <path d="M70 30c100 5 164 54 184 112s-4 93-38 112H70z" fill="#e6f0df" stroke="#31543c" stroke-width="2"/>
+  <path d="M254 32c100 22 155 80 175 170" fill="none" stroke="#3158a6" stroke-width="18" opacity=".35"/>
+  <g fill="#f6f8fb" stroke="#30435d" stroke-width="2">
+    <rect x="335" y="35" width="130" height="48" rx="8"/>
+    <rect x="490" y="35" width="145" height="48" rx="8"/>
+    <rect x="335" y="145" width="130" height="48" rx="8"/>
+    <rect x="490" y="145" width="145" height="48" rx="8"/>
+  </g>
+  <g stroke="#30435d" stroke-width="2" fill="none">
+    <path d="M465 59h25M400 83v62M562 83v62M465 169h25"/>
+  </g>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="16" fill="#222" text-anchor="middle">
+    <text x="150" y="80">潘帕斯草原</text><text x="150" y="106">平坦、温和</text>
+    <text x="245" y="235">大西洋沿岸</text>
+    <text x="400" y="65">分区轮牧</text><text x="562" y="65">河岸缓冲带</text>
+    <text x="400" y="175">粪污制沼气</text><text x="562" y="175">冷链与出口</text>
+    <text x="485" y="240">低碳养牛系统</text>
+  </g>
+</svg>

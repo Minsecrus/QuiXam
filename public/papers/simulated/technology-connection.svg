@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 250">
+  <rect width="560" height="250" fill="#fff"/>
+  <rect x="75" y="58" width="330" height="38" fill="#d9e1ea" stroke="#33475f" stroke-width="2"/>
+  <rect x="255" y="20" width="64" height="195" fill="#eef2f6" stroke="#33475f" stroke-width="2"/>
+  <circle cx="287" cy="78" r="11" fill="#fff" stroke="#333" stroke-width="2"/>
+  <path d="M287 18v49M287 89v113" stroke="#333" stroke-width="8"/>
+  <path d="M265 17h44l-7-12h-30zM265 203h44l-7 18h-30z" fill="#bbb" stroke="#333" stroke-width="2"/>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="17" fill="#222">
+    <text x="88" y="50">薄板</text><text x="332" y="206">方管</text>
+    <text x="355" y="125">两侧可操作</text><path d="M345 118l-45-27" stroke="#222" stroke-width="1.5"/>
+  </g>
+</svg>

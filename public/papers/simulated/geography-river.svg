@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 230">
+  <rect width="650" height="230" fill="#fff"/>
+  <path d="M55 30v150h550" fill="none" stroke="#222" stroke-width="2.5"/>
+  <path d="M65 48c80 42 115 70 178 87s155 25 351 37" fill="none" stroke="#3158a6" stroke-width="4"/>
+  <path d="M287 125v52" stroke="#b04a3f" stroke-width="8"/>
+  <path d="M271 125h32" stroke="#b04a3f" stroke-width="3"/>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="16" fill="#222">
+    <text x="10" y="24">海拔</text><text x="292" y="117" fill="#b04a3f">水库</text>
+    <text x="85" y="205">上游</text><text x="300" y="205">中游</text><text x="525" y="205">下游/河口</text>
+    <text x="275" y="225">河流流程</text>
+  </g>
+</svg>

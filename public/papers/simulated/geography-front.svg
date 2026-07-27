@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 230">
+  <rect width="650" height="230" fill="#fff"/>
+  <path d="M45 182h560" stroke="#333" stroke-width="3"/>
+  <path d="M180 182c60-74 128-111 242-129" fill="none" stroke="#3158a6" stroke-width="4"/>
+  <path d="M165 166l-18-17m53-4-18-18m54-8-18-18m56-7-18-18m60-3-18-18" stroke="#3158a6" stroke-width="3"/>
+  <path d="M506 182c-42-35-74-55-112-70" fill="none" stroke="#c24b42" stroke-width="4"/>
+  <path d="M436 131l20-2-8 19m39 3 20-2-8 19" fill="#c24b42" stroke="#c24b42"/>
+  <path d="M80 178c42-22 83-23 124 0M305 177c44-25 91-25 139 0" fill="#eef3f8" stroke="#777" stroke-width="2"/>
+  <circle cx="245" cy="185" r="7" fill="#222"/>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="17" fill="#222">
+    <text x="230" y="215">甲</text><text x="72" y="165">冷空气</text><text x="480" y="165">暖空气</text>
+    <text x="245" y="30">锋面系统移动方向 →</text>
+  </g>
+</svg>

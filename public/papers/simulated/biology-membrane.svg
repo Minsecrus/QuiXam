@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 250">
+  <defs>
+    <marker id="bioArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0l8 4-8 4z" fill="#263b59"/>
+    </marker>
+  </defs>
+  <rect width="600" height="250" fill="#fff"/>
+  <ellipse cx="300" cy="128" rx="250" ry="96" fill="#f7fbff" stroke="#263b59" stroke-width="3"/>
+  <ellipse cx="300" cy="128" rx="105" ry="65" fill="#eef5ff" stroke="#59779f" stroke-width="3"/>
+  <g fill="#e7ba55" stroke="#6a4c1c" stroke-width="2">
+    <rect x="117" y="44" width="42" height="28" rx="8"/>
+    <rect x="380" y="167" width="42" height="28" rx="8"/>
+  </g>
+  <g stroke="#263b59" stroke-width="3" fill="none" marker-end="url(#bioArrow)">
+    <path d="M138 18v24"/>
+    <path d="M160 74c30 35 40 48 58 58"/>
+    <path d="M376 180c-31-17-54-25-77-31"/>
+    <path d="M422 198c25 22 52 26 83 20"/>
+  </g>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="16" fill="#222">
+    <text x="75" y="20">外界离子</text>
+    <text x="112" y="62">载体甲</text>
+    <text x="252" y="132">液泡</text>
+    <text x="369" y="187">泵乙</text>
+    <text x="245" y="238">根细胞</text>
+    <text x="486" y="215">细胞外</text>
+  </g>
+</svg>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 285" role="img" aria-labelledby="title">
+  <title id="title">菱锰矿制取金属锰工艺流程</title>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#111"/>
+    </marker>
+  </defs>
+  <g fill="#fff" stroke="#111" stroke-width="2">
+    <rect x="25" y="96" width="125" height="52"/><rect x="190" y="96" width="105" height="52"/>
+    <rect x="335" y="96" width="105" height="52"/><rect x="480" y="96" width="105" height="52"/>
+    <rect x="625" y="96" width="105" height="52"/><rect x="770" y="96" width="92" height="52"/>
+    <rect x="900" y="96" width="58" height="52"/>
+  </g>
+  <g fill="none" stroke="#111" stroke-width="2" marker-end="url(#arrow)">
+    <path d="M150 122H190M295 122H335M440 122H480M585 122H625M730 122H770M862 122H900"/>
+    <path d="M242 148V230M387 148V230M532 148V230M677 148V230"/>
+  </g>
+  <g font-family="Times New Roman, SimSun, serif" font-size="18" fill="#111" text-anchor="middle">
+    <text x="88" y="128">菱锰矿粉</text><text x="242" y="128">酸浸</text><text x="387" y="128">调 pH</text>
+    <text x="532" y="128">除杂Ⅰ</text><text x="677" y="128">除杂Ⅱ</text><text x="816" y="128">电解</text><text x="929" y="128">Mn</text>
+    <text x="242" y="56">H₂SO₄、氧化剂</text><text x="387" y="56">稀氨水</text>
+    <text x="532" y="56">(NH₄)₂S</text><text x="677" y="56">NH₄F</text>
+    <text x="242" y="260">滤渣 1</text><text x="387" y="260">滤渣 2</text><text x="532" y="260">滤渣 3</text><text x="677" y="260">滤渣 4</text>
+  </g>
+</svg>

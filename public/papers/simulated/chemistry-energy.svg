@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 330" role="img" aria-labelledby="title">
+  <title id="title">二氧化碳催化氢化反应历程与温度曲线</title>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#111"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="#111" stroke-width="2">
+    <path d="M55 275H365M75 295V35" marker-end="url(#arrow)"/>
+    <path d="M75 230C120 230 120 190 155 188S205 65 238 66S275 170 300 169S325 105 350 104" stroke-width="3"/>
+    <path d="M430 275H752M450 295V35" marker-end="url(#arrow)"/>
+    <path d="M450 80C540 90 620 120 720 238" stroke-width="3"/>
+    <path d="M450 218C535 200 615 165 720 105" stroke-width="2.5" stroke-dasharray="8 5"/>
+    <path d="M525 50V275M615 50V275" stroke="#aaa" stroke-width="1" stroke-dasharray="5 5"/>
+  </g>
+  <g font-family="Times New Roman, SimSun, serif" font-size="17" fill="#111">
+    <text x="7" y="46">相对能量</text><text x="298" y="316">反应历程</text>
+    <text x="116" y="210">TS₁</text><text x="220" y="56">TS₂</text><text x="325" y="95">TS₃</text>
+    <text x="415" y="47">%</text><text x="705" y="316">温度/℃</text>
+    <text x="510" y="316">240</text><text x="600" y="316">300</text>
+    <text x="676" y="110">X</text><text x="676" y="225">Y</text>
+  </g>
+</svg>

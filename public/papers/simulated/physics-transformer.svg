@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 220" role="img" aria-labelledby="title">
+  <title id="title">理想变压器和两只灯泡电路</title>
+  <g fill="none" stroke="#111" stroke-width="2">
+    <path d="M60 48H170M60 172H170M550 48H655V172H550"/>
+    <path d="M170 48v18c-34 6-34 20 0 26c-34 6-34 20 0 26c-34 6-34 20 0 26v28"/>
+    <path d="M300 48v18c34 6 34 20 0 26c34 6 34 20 0 26c34 6 34 20 0 26v28"/>
+    <path d="M300 48H655M300 172H655"/>
+    <path d="M225 45V175M244 45V175" stroke-width="4"/>
+    <circle cx="438" cy="110" r="34"/><path d="M414 86L462 134M462 86L414 134"/>
+    <circle cx="570" cy="110" r="34"/><path d="M546 86L594 134M594 86L546 134"/>
+  </g>
+  <g font-family="Times New Roman, SimSun, serif" font-size="20" fill="#111">
+    <text x="30" y="116">U</text><text x="416" y="117">L₁</text><text x="548" y="117">L₂</text>
+    <text x="186" y="205">n₁</text><text x="294" y="205">n₂</text>
+  </g>
+</svg>

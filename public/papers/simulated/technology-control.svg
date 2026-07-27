@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 220">
+  <defs>
+    <marker id="ctrlArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0l8 4-8 4z" fill="#30435d"/>
+    </marker>
+  </defs>
+  <rect width="680" height="220" fill="#fff"/>
+  <g fill="#f7f9fc" stroke="#30435d" stroke-width="2">
+    <circle cx="80" cy="90" r="22"/>
+    <rect x="150" y="60" width="115" height="60" rx="8"/>
+    <rect x="330" y="60" width="115" height="60" rx="8"/>
+    <rect x="510" y="60" width="125" height="60" rx="8"/>
+  </g>
+  <g stroke="#30435d" stroke-width="2.5" fill="none" marker-end="url(#ctrlArrow)">
+    <path d="M15 90h43M102 90h48M265 90h65M445 90h65"/>
+    <path d="M573 122v65H80v-75"/>
+  </g>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="15" fill="#222" text-anchor="middle">
+    <text x="35" y="80">设定值</text><text x="80" y="96">比较</text>
+    <text x="207" y="86">控制器</text><text x="207" y="108">加热功率</text>
+    <text x="387" y="96">恒温箱</text><text x="573" y="86">温度传感器</text><text x="573" y="108">测量输出</text>
+    <text x="320" y="207">反馈</text>
+  </g>
+</svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 330" role="img" aria-labelledby="title">
+  <title id="title">半圆磁场与矩形电场区域</title>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#111"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="#111" stroke-width="2">
+    <rect x="90" y="40" width="520" height="240"/>
+    <path d="M90 40A120 120 0 0 1 90 280" stroke-width="2.5"/>
+    <path d="M90 280C140 235 178 194 204 121" stroke-dasharray="5 5"/>
+    <path d="M350 92v125M455 92v125M560 92v125" marker-end="url(#arrow)"/>
+    <path d="M90 280l72-56" marker-end="url(#arrow)"/>
+    <circle cx="90" cy="160" r="3" fill="#111"/>
+  </g>
+  <g font-family="Times New Roman, SimSun, serif" font-size="19" fill="#111">
+    <text x="72" y="34">N</text><text x="72" y="305">M</text><text x="612" y="34">Q</text><text x="612" y="305">P</text>
+    <text x="58" y="167">O</text><text x="385" y="84">E</text><text x="128" y="245">v</text>
+    <text x="120" y="283">θ</text>
+    <text x="142" y="120">×　×　×</text><text x="142" y="157">×　×　×</text><text x="142" y="194">×　×　×</text>
+  </g>
+</svg>

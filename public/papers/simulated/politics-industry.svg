@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 240">
+  <defs>
+    <marker id="polArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0l8 4-8 4z" fill="#30435d"/>
+    </marker>
+  </defs>
+  <rect width="680" height="240" fill="#fff"/>
+  <g fill="#f6f8fc" stroke="#30435d" stroke-width="2">
+    <rect x="25" y="84" width="105" height="54" rx="10"/>
+    <rect x="170" y="25" width="120" height="54" rx="10"/>
+    <rect x="170" y="160" width="120" height="54" rx="10"/>
+    <rect x="340" y="84" width="120" height="54" rx="10"/>
+    <rect x="510" y="84" width="135" height="54" rx="10"/>
+  </g>
+  <g stroke="#30435d" stroke-width="2.5" fill="none" marker-end="url(#polArrow)">
+    <path d="M130 100l40-35"/><path d="M130 125l40 56"/>
+    <path d="M290 53l87 31"/><path d="M290 185l87-47"/>
+    <path d="M460 111h50"/>
+    <path d="M577 138c-20 73-407 78-460 7"/>
+  </g>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="16" fill="#222" text-anchor="middle">
+    <text x="77" y="106">农户与</text><text x="77" y="127">村集体</text>
+    <text x="230" y="58">科研与金融</text>
+    <text x="230" y="193">仓储与加工</text>
+    <text x="400" y="106">统一标准</text><text x="400" y="127">质量追溯</text>
+    <text x="577" y="106">品牌与市场</text><text x="577" y="127">收益反馈</text>
+  </g>
+</svg>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300" role="img" aria-labelledby="title">
+  <title id="title">两种酸碱滴定的导电能力曲线</title>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#111"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="#111" stroke-width="2">
+    <path d="M72 250H675M92 275V32" marker-end="url(#arrow)"/>
+    <path d="M92 72L348 222L625 62" stroke-width="3"/>
+    <path d="M92 118C210 162 288 205 354 205C450 205 540 148 625 92" stroke-width="2.5" stroke-dasharray="8 5"/>
+    <path d="M348 222V250M354 205V250" stroke-dasharray="4 4" stroke-width="1"/>
+  </g>
+  <g font-family="Times New Roman, SimSun, serif" font-size="18" fill="#111">
+    <text x="13" y="46">导电能力</text><text x="657" y="276">V/mL</text><text x="82" y="270">O</text>
+    <text x="335" y="274">10</text><text x="613" y="274">20</text>
+    <text x="210" y="115">强酸</text><text x="220" y="175">弱酸</text>
+  </g>
+</svg>

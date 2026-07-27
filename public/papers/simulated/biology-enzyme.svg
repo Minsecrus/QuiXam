@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210">
+  <rect width="600" height="210" fill="#fff"/>
+  <g stroke="#222" stroke-width="2" fill="none">
+    <path d="M62 24v142h498M62 166l8-7m-8 7 8 7"/>
+    <path d="M55 32l7-8 7 8"/>
+    <path d="M65 158 C135 145 175 105 230 78 S350 38 548 31" stroke="#3158a6" stroke-width="3"/>
+    <path d="M65 163 C160 157 210 135 272 104 S400 55 548 38" stroke="#a33b32" stroke-width="3"/>
+    <path d="M65 165 C190 163 280 151 354 122 S458 75 548 49" stroke="#3b7d44" stroke-width="3"/>
+  </g>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="16" fill="#222">
+    <text x="245" y="201">反应时间</text>
+    <text x="8" y="20">产物量</text>
+    <text x="455" y="27" fill="#3158a6">高酶浓度</text>
+    <text x="455" y="58" fill="#a33b32">中酶浓度</text>
+    <text x="455" y="87" fill="#3b7d44">低酶浓度</text>
+  </g>
+</svg>

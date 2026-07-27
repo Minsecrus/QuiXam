@@ -529,7 +529,7 @@ function QuestionInspector({
         </div>
 
         <label className="field">
-          <span>题干（$…$ 公式）</span>
+          <span>题干（$…$ 公式 · 化学式用 \ce{'{…}'}）</span>
           <textarea
             rows={5}
             value={question.stem}

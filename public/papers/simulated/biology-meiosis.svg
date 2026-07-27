@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 220">
+  <defs>
+    <marker id="meiArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0l8 4-8 4z" fill="#333"/>
+    </marker>
+  </defs>
+  <rect width="600" height="220" fill="#fff"/>
+  <g stroke="#333" stroke-width="2" fill="#f9fbff">
+    <circle cx="100" cy="102" r="66"/>
+    <circle cx="300" cy="102" r="58"/>
+    <circle cx="493" cy="102" r="50"/>
+  </g>
+  <g stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M75 63l50 78M125 63l-50 78" stroke="#3158a6"/>
+    <path d="M85 63l40 78M115 63l-40 78" stroke="#b44b3f"/>
+    <path d="M280 72l35 60M315 72l-35 60" stroke="#3158a6"/>
+    <path d="M476 78l28 49M504 78l-28 49" stroke="#b44b3f"/>
+  </g>
+  <g stroke="#333" stroke-width="2.5" marker-end="url(#meiArrow)">
+    <path d="M172 102h54"/><path d="M363 102h65"/>
+  </g>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="17" fill="#222" text-anchor="middle">
+    <text x="100" y="198">甲</text>
+    <text x="300" y="190">乙</text>
+    <text x="493" y="181">丙</text>
+  </g>
+</svg>

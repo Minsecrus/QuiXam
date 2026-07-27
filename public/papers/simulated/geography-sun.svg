@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 220">
+  <rect width="620" height="220" fill="#fff"/>
+  <g stroke="#222" stroke-width="2" fill="none">
+    <path d="M55 175h520M70 175v-112M70 175l78-38M220 175v-112M220 175l58-61M370 175v-112M370 175l35-83M520 175v-112M520 175l58-107"/>
+    <path d="M70 55h450" stroke="#777" stroke-dasharray="5 5"/>
+  </g>
+  <g fill="#f2b632" stroke="#8f6514" stroke-width="2">
+    <circle cx="148" cy="137" r="12"/><circle cx="278" cy="114" r="12"/>
+    <circle cx="405" cy="92" r="12"/><circle cx="578" cy="68" r="12"/>
+  </g>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="16" fill="#222" text-anchor="middle">
+    <text x="70" y="205">甲日</text><text x="220" y="205">日期2</text>
+    <text x="370" y="205">日期3</text><text x="520" y="205">乙日</text>
+    <text x="315" y="25">正午旗杆影长逐渐缩短（示意）</text>
+  </g>
+</svg>

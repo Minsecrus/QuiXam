@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 280">
+  <rect width="720" height="280" fill="#fff"/>
+  <rect x="55" y="35" width="190" height="205" fill="#edf0f4" stroke="#4c5968" stroke-width="3"/>
+  <path d="M245 78h330l72 54H245z" fill="#dce9f6" stroke="#3158a6" stroke-width="3"/>
+  <path d="M270 132l-12 105M555 132l28 105" stroke="#444" stroke-width="8"/>
+  <path d="M258 210h325" stroke="#444" stroke-width="5"/>
+  <path d="M245 78l34 132M575 78l8 132" stroke="#b04a3f" stroke-width="3"/>
+  <circle cx="270" cy="132" r="9" fill="#fff" stroke="#333" stroke-width="3"/>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="16" fill="#222">
+    <text x="95" y="65">商铺墙面</text><text x="385" y="60">可展开棚面</text>
+    <text x="590" y="248">支撑臂</text><text x="286" y="250">转轴/驱动</text>
+  </g>
+</svg>

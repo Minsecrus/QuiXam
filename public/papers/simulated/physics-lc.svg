@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 245" role="img" aria-labelledby="title">
+  <title id="title">LC 振荡电路与电压时间图像</title>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#111"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="#111" stroke-width="2">
+    <path d="M70 55H265V195H70"/>
+    <path d="M70 55v26c-30 7-30 23 0 30c-30 7-30 23 0 30c-30 7-30 23 0 30v24"/>
+    <path d="M250 108H280M250 138H280"/>
+    <path d="M265 55V108M265 138V195"/>
+    <path d="M365 190H690M390 218V28" marker-end="url(#arrow)"/>
+    <path d="M390 108C430 38 482 38 520 108S610 178 665 108"/>
+    <path d="M456 108V190M520 108V190M588 108V190M665 108V190" stroke-dasharray="5 5" stroke-width="1.2"/>
+  </g>
+  <g font-family="Times New Roman, SimSun, serif" font-size="20" fill="#111">
+    <text x="97" y="132">L</text><text x="292" y="132">C</text>
+    <text x="235" y="101">a</text><text x="235" y="157">b</text>
+    <text x="373" y="210">O</text><text x="675" y="212">t</text><text x="350" y="38">uₐᵦ</text>
+    <text x="446" y="212">t₁</text><text x="510" y="212">t₂</text>
+    <text x="578" y="212">t₃</text><text x="655" y="212">t₄</text>
+  </g>
+</svg>

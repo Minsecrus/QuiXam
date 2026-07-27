@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 230">
+  <rect width="600" height="230" fill="#fff"/>
+  <g stroke="#222" stroke-width="2" fill="none">
+    <path d="M65 24v165h500M65 189l8-7m-8 7 8 7"/>
+    <path d="M58 32l7-8 7 8"/>
+    <path d="M65 165 C105 95 155 57 230 46 S430 40 550 39" stroke="#225b9b" stroke-width="3"/>
+    <path d="M65 171 C110 118 160 87 235 76 S430 70 550 69" stroke="#b44b3f" stroke-width="3"/>
+    <path d="M65 135h500" stroke="#777" stroke-dasharray="6 5"/>
+    <path d="M165 189v-142" stroke="#777" stroke-dasharray="5 5"/>
+  </g>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="16" fill="#222">
+    <text x="238" y="220">光照强度</text>
+    <text x="7" y="20">净光合速率</text>
+    <text x="527" y="34" fill="#225b9b">甲</text>
+    <text x="527" y="65" fill="#b44b3f">乙</text>
+    <text x="158" y="207">A</text>
+    <text x="48" y="140">0</text>
+  </g>
+</svg>

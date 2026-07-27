@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 260">
+  <rect width="700" height="260" fill="#fff"/>
+  <circle cx="82" cy="55" r="28" fill="#f2b632" stroke="#9a6c13" stroke-width="2"/>
+  <g stroke="#e2a82d" stroke-width="3"><path d="M82 12V0M82 110V98M39 55H20M144 55h-19M51 24L37 10M113 86l14 14M51 86l-14 14M113 24l14-14"/></g>
+  <g fill="#3158a6" stroke="#173f73" stroke-width="2">
+    <path d="M170 78h145l-34 72H136z"/><path d="M355 78h145l-34 72H321z"/>
+  </g>
+  <g stroke="#fff" stroke-width="1.2"><path d="M170 102h133M158 126h133M355 102h133M343 126h133"/><path d="M207 78l-34 72M244 78l-34 72M392 78l-34 72M429 78l-34 72"/></g>
+  <path d="M150 176c70-24 143 19 213-6s136 18 210-5" fill="none" stroke="#b88a4a" stroke-width="4"/>
+  <g fill="#76954f"><path d="M190 196l8-28 8 28zM260 203l8-36 8 36zM410 198l8-30 8 30zM512 204l8-38 8 38z"/></g>
+  <rect x="540" y="60" width="120" height="90" rx="8" fill="#f6f8fb" stroke="#30435d" stroke-width="2"/>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="16" fill="#222" text-anchor="middle">
+    <text x="600" y="88">储能</text><text x="600" y="112">外送</text><text x="600" y="136">制氢</text>
+    <text x="330" y="238">光伏板遮阴、沙障与耐旱植被</text>
+  </g>
+</svg>

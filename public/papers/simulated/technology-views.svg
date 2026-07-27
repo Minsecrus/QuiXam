@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300">
+  <rect width="760" height="300" fill="#fff"/>
+  <g stroke="#222" stroke-width="2" fill="none">
+    <path d="M45 35h160v115H45zM95 35v58h110M95 93v57"/>
+    <path d="M45 180h160v80H45zM95 180v35h110"/>
+  </g>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="16" fill="#222" text-anchor="middle">
+    <text x="125" y="22">主视图</text><text x="125" y="287">俯视图</text>
+  </g>
+  <g stroke="#222" stroke-width="2" fill="none">
+    <path d="M270 45h90v105h-90zM270 95h90M390 45h90v105h-90zM390 105h90M510 45h90v105h-90zM510 95h55v55M630 45h90v105h-90zM665 45v105"/>
+  </g>
+  <g font-family="Arial" font-size="18" fill="#222" text-anchor="middle">
+    <text x="315" y="176">A</text><text x="435" y="176">B</text>
+    <text x="555" y="176">C</text><text x="675" y="176">D</text>
+  </g>
+</svg>

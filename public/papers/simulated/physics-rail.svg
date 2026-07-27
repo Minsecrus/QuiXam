@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 300" role="img" aria-labelledby="title">
+  <title id="title">倾斜轨道、无磁场区和有磁场水平轨道</title>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#111"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="#111" stroke-width="2">
+    <path d="M65 55L330 230H790M95 30L360 205H790"/>
+    <path d="M285 200L330 230M315 175L360 205"/>
+    <path d="M500 205V230" stroke-dasharray="5 5"/>
+    <path d="M620 205V230" stroke-dasharray="5 5"/>
+    <path d="M790 205c45 0 45 25 0 25"/>
+    <path d="M758 205v25" stroke-width="5"/>
+    <path d="M150 58l-28 42M166 70l-28 42" stroke-width="4"/>
+    <path d="M378 160v-48M438 160v-48M680 190v-48M735 190v-48" marker-end="url(#arrow)"/>
+  </g>
+  <g font-family="Times New Roman, SimSun, serif" font-size="19" fill="#111">
+    <text x="112" y="55">MN</text><text x="258" y="231">O₁</text><text x="306" y="185">O₂</text>
+    <text x="485" y="252">P₁</text><text x="606" y="197">P₂</text>
+    <text x="704" y="128">B</text><text x="810" y="225">R</text>
+    <text x="202" y="190">θ</text><text x="398" y="104">无磁场区</text>
+  </g>
+</svg>

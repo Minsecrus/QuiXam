@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 250">
+  <defs>
+    <marker id="geneArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0l8 4-8 4z" fill="#263b59"/>
+    </marker>
+  </defs>
+  <rect width="680" height="250" fill="#fff"/>
+  <rect x="30" y="25" width="275" height="190" rx="18" fill="#f5f8ff" stroke="#263b59" stroke-width="2"/>
+  <path d="M70 72c40-45 80 45 120 0s80 45 110 0" fill="none" stroke="#3158a6" stroke-width="4"/>
+  <path d="M70 82c40-45 80 45 120 0s80 45 110 0" fill="none" stroke="#b44b3f" stroke-width="4"/>
+  <path d="M95 145h150" stroke="#222" stroke-width="4" stroke-dasharray="28 9 12 9"/>
+  <path d="M250 145h52M305 145h72" stroke="#263b59" stroke-width="2.5" marker-end="url(#geneArrow)"/>
+  <path d="M385 145h120" stroke="#222" stroke-width="4"/>
+  <path d="M512 145h58" stroke="#263b59" stroke-width="2.5" marker-end="url(#geneArrow)"/>
+  <ellipse cx="610" cy="145" rx="42" ry="27" fill="#fff2d8" stroke="#8b5b18" stroke-width="2"/>
+  <path d="M470 61c26-18 53 15 74 0s48 13 69 0" fill="none" stroke="#4f8a4c" stroke-width="4"/>
+  <path d="M535 78c0 25-2 41-23 51" fill="none" stroke="#4f8a4c" stroke-width="2.5" marker-end="url(#geneArrow)"/>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="16" fill="#222" text-anchor="middle">
+    <text x="165" y="50">DNA</text>
+    <text x="170" y="174">前体 mRNA</text>
+    <text x="340" y="135">剪接</text>
+    <text x="445" y="174">成熟 mRNA</text>
+    <text x="610" y="150">蛋白 P</text>
+    <text x="543" y="45">miRNA 复合物</text>
+    <text x="165" y="238">细胞核</text>
+    <text x="495" y="238">细胞质</text>
+  </g>
+</svg>

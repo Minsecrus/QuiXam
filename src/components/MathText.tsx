@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import katex from 'katex'
+import 'katex/contrib/mhchem'
 
 type Segment = { math: boolean; value: string }
 
@@ -40,7 +41,10 @@ function splitMath(text: string): Segment[] {
   return segments
 }
 
-/** 渲染带 $...$ 行内公式的多行文本 */
+/**
+ * 渲染带 $...$ 行内公式的多行文本。
+ * mhchem 已注册到 KaTeX，因此化学式可写成 `$\ce{2H2 + O2 -> 2H2O}$`。
+ */
 export function MathText({ text }: { text: string }) {
   const segments = useMemo(() => splitMath(text), [text])
 

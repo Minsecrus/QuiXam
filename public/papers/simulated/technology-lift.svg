@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 300">
+  <rect width="700" height="300" fill="#fff"/>
+  <rect x="55" y="30" width="590" height="28" fill="#d8dee6" stroke="#445261" stroke-width="2"/>
+  <g fill="#fff" stroke="#333" stroke-width="3">
+    <circle cx="180" cy="87" r="28"/><circle cx="520" cy="87" r="28"/><circle cx="95" cy="218" r="35"/>
+  </g>
+  <path d="M180 87v115M520 87v115M180 202h340" stroke="#3158a6" stroke-width="5"/>
+  <path d="M95 183v-96h57M130 218h50" stroke="#b04a3f" stroke-width="6"/>
+  <path d="M180 87h340" stroke="#777" stroke-width="3" stroke-dasharray="8 6"/>
+  <rect x="160" y="199" width="380" height="28" rx="8" fill="#edf2f7" stroke="#445261" stroke-width="2"/>
+  <g font-family="Arial,'Microsoft YaHei'" font-size="16" fill="#222" text-anchor="middle">
+    <text x="95" y="267">手摇轮</text><text x="350" y="252">晾衣杆</text>
+    <text x="350" y="80">同步轴 / 同步绳</text>
+  </g>
+</svg>
