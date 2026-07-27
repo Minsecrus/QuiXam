@@ -3,7 +3,7 @@ import { collectAssetIds } from './transfer'
 import { DEFAULT_LAYOUT, type Paper, type Question } from '../types'
 
 function q(id: string, extra: Partial<Question> = {}): Question {
-  return { id, type: 'essay', stem: '', score: 5, options: [], answer: '', answerLines: 0, ...extra }
+  return { id, type: 'shortAnswer', stem: '', score: 5, options: [], answer: '', answerLines: 0, ...extra }
 }
 
 function withImages(id: string, ...assetIds: string[]): Question {

@@ -20,7 +20,6 @@ function draft(): RecognizedPaper {
       fullScore: 15,
       notices: ['请规范作答。'],
     },
-    layout: { answerStyle: 'blank' },
     sections: [
       {
         title: '选择题',
@@ -33,7 +32,9 @@ function draft(): RecognizedPaper {
             options: ['1', '2', '3', '4'],
             answer: '',
             answerLines: 0,
-            answerStyle: 'inherit',
+            segmentationText: '',
+            compositionStyle: 'lines',
+            parts: [],
             material: '',
             materialAlign: 'left',
             children: [],
@@ -51,18 +52,22 @@ function draft(): RecognizedPaper {
             options: [],
             answer: '',
             answerLines: 0,
-            answerStyle: 'inherit',
+            segmentationText: '',
+            compositionStyle: 'lines',
+            parts: [],
             material: '#材料标题\n材料正文。',
             materialAlign: 'left',
             children: [
               {
-                type: 'essay',
+                type: 'shortAnswer',
                 stem: '概括材料。',
                 score: 10,
                 options: [],
                 answer: '',
                 answerLines: 5,
-                answerStyle: 'lines',
+                segmentationText: '',
+                compositionStyle: 'lines',
+                parts: [],
               },
             ],
           },
@@ -80,7 +85,7 @@ describe('PAPER_RECOGNITION_JSON_SCHEMA', () => {
   })
 
   it('要求模型一次返回完整试卷字段', () => {
-    expect(PAPER_RECOGNITION_JSON_SCHEMA.required).toEqual(['name', 'info', 'layout', 'sections'])
+    expect(PAPER_RECOGNITION_JSON_SCHEMA.required).toEqual(['name', 'info', 'sections'])
     expect(PAPER_RECOGNITION_JSON_SCHEMA.properties.sections.minItems).toBe(1)
   })
 })
@@ -104,6 +109,21 @@ describe('parseRecognizedPaper', () => {
     value.sections[0].questions = []
     expect(() => parseRecognizedPaper(value)).toThrow('没有题目')
   })
+
+  it('保留解答题中句内空位与小问后横线的不同位置', () => {
+    const value = draft()
+    const child = value.sections[1].questions[0].children[0]
+    child.type = 'solution'
+    child.stem = '完成实验。'
+    child.answerLines = 0
+    child.parts = [
+      { stem: '（1）试剂为______。', score: 2, answerLines: 0 },
+      { stem: '（2）说明理由。', score: 8, answerLines: 3 },
+    ]
+
+    const parsed = parseRecognizedPaper(value)
+    expect(parsed.sections[1].questions[0].children[0].parts).toEqual(child.parts)
+  })
 })
 
 describe('hydrateRecognizedPaper', () => {
@@ -112,10 +132,10 @@ describe('hydrateRecognizedPaper', () => {
     expect(paper.id).toBeTruthy()
     expect(paper.createdAt).toBeGreaterThan(0)
     expect(paper.layout.pageSize).toBe('a4')
-    expect(paper.layout.answerStyle).toBe('blank')
     expect(paper.sections[0].id).toBeTruthy()
     expect(paper.sections[0].questions[0].id).toBeTruthy()
-    expect(paper.sections[1].questions[0].children?.[0].answerStyle).toBe('lines')
+    expect(paper.sections[1].questions[0].children?.[0].type).toBe('shortAnswer')
+    expect(paper.sections[1].questions[0].children?.[0].answerLines).toBe(5)
   })
 
   it('材料题分值固定由子题汇总，忽略父题分值', () => {
@@ -124,6 +144,20 @@ describe('hydrateRecognizedPaper', () => {
     const material = hydrateRecognizedPaper(value).sections[1].questions[0]
     expect(material.score).toBe(0)
     expect(material.children?.[0].score).toBe(10)
+  })
+
+  it('为解答题的小问补本地 id，但不改动答题位', () => {
+    const value = draft()
+    const child = value.sections[1].questions[0].children[0]
+    child.type = 'solution'
+    child.parts = [
+      { stem: '（1）填写______。', score: 4, answerLines: 0 },
+      { stem: '（2）分析。', score: 6, answerLines: 2 },
+    ]
+
+    const hydrated = hydrateRecognizedPaper(value).sections[1].questions[0].children?.[0]
+    expect(hydrated?.parts?.[0].id).toBeTruthy()
+    expect(hydrated?.parts?.map((part) => part.answerLines)).toEqual([0, 2])
   })
 })
 

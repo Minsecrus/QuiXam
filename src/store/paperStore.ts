@@ -12,6 +12,7 @@ import {
 } from '../types'
 import * as db from '../db'
 import { createFromTemplate, createQuestion, createSection } from '../data/templates'
+import { splitSegmentationText, splitSolutionText } from '../data/paperFactory'
 import { locateQuestion, QUESTION_TYPES } from '../utils/format'
 import { collectAssetIds, dataUrlToBlob } from '../utils/transfer'
 import { uid } from '../utils/id'
@@ -91,9 +92,135 @@ function toMeta(paper: Paper): PaperMeta {
   return { id: paper.id, name: paper.name, updatedAt: paper.updatedAt }
 }
 
-/** 旧版本存量数据的轻量迁移：补齐后加的 layout 字段 */
-function hydratePaper(paper: Paper): Paper {
-  return { ...paper, layout: { ...DEFAULT_LAYOUT, ...paper.layout } }
+type LegacyAnswerStyle = 'blank' | 'lines'
+
+function inferLegacyEssayType(
+  subject: string,
+  stem: string,
+  answerStyle: LegacyAnswerStyle,
+): QuestionType {
+  if (/作文|写作|写一篇|续写|不少于\s*\d+\s*字|词数应为/.test(stem)) return 'composition'
+  if (/生物|化学|地理|技术/.test(subject)) return 'solution'
+  if (/物理/.test(subject) && /实验|探究|测定|传感器|装置|电路/.test(stem)) return 'solution'
+  if (/数学|物理/.test(subject)) return 'calculation'
+  if (/历史|政治|语文/.test(subject)) return 'shortAnswer'
+  return answerStyle === 'blank' ? 'calculation' : 'shortAnswer'
+}
+
+function migrateStoredQuestion(
+  source: Question,
+  subject: string,
+  legacyPaperStyle: LegacyAnswerStyle,
+  allowMaterial = true,
+): Question {
+  const legacy = source as unknown as Omit<Question, 'type'> & {
+    type: QuestionType | 'essay'
+    answerStyle?: LegacyAnswerStyle
+  }
+  const effectiveStyle = legacy.answerStyle ?? legacyPaperStyle
+  let type: QuestionType =
+    legacy.type === 'essay'
+      ? inferLegacyEssayType(subject, legacy.stem ?? '', effectiveStyle)
+      : QUESTION_TYPES.includes(legacy.type as QuestionType)
+        ? (legacy.type as QuestionType)
+        : inferLegacyEssayType(subject, legacy.stem ?? '', effectiveStyle)
+  if (type === 'material' && !allowMaterial) {
+    type = inferLegacyEssayType(subject, legacy.stem ?? '', effectiveStyle)
+  }
+
+  const {
+    answerStyle: _legacyAnswerStyle,
+    children: legacyChildren,
+    parts: legacyParts,
+    segmentationText: legacySegmentationText,
+    compositionStyle: legacyCompositionStyle,
+    ...rest
+  } = legacy
+  void _legacyAnswerStyle
+
+  const base: Question = {
+    ...rest,
+    type,
+    stem: typeof legacy.stem === 'string' ? legacy.stem : '',
+    score: Number.isFinite(legacy.score) ? legacy.score : 5,
+    options: Array.isArray(legacy.options) ? [...legacy.options] : [],
+    answer: typeof legacy.answer === 'string' ? legacy.answer : '',
+    answerLines: Number.isFinite(legacy.answerLines) ? Math.max(0, legacy.answerLines) : 0,
+    images: legacy.images?.map((image) => ({ ...image })),
+  }
+
+  if (
+    type === 'segmentation' ||
+    (type === 'fill' && base.stem.includes('断句') && splitSegmentationText(base.stem).segmentationText)
+  ) {
+    const split = splitSegmentationText(base.stem)
+    return {
+      ...base,
+      type: 'segmentation',
+      stem: legacySegmentationText ? base.stem : split.stem,
+      segmentationText: legacySegmentationText ?? split.segmentationText,
+      answerLines: 0,
+      options: [],
+    }
+  }
+
+  if (type === 'solution') {
+    const structured =
+      Array.isArray(legacyParts) && legacyParts.length > 0
+        ? {
+            stem: base.stem,
+            parts: legacyParts.map((part) => ({
+              id: part.id || uid(),
+              stem: typeof part.stem === 'string' ? part.stem : '',
+              score: Number.isFinite(part.score) ? Math.max(0, part.score) : 0,
+              answerLines: Number.isFinite(part.answerLines) ? Math.max(0, part.answerLines) : 0,
+            })),
+          }
+        : splitSolutionText(base.stem, base.answerLines)
+    return { ...base, ...structured, answerLines: 0, options: [] }
+  }
+
+  if (type === 'composition') {
+    const english = /英语|English/.test(subject)
+    return {
+      ...base,
+      options: [],
+      compositionStyle: legacyCompositionStyle ?? (english ? 'lines' : 'grid'),
+    }
+  }
+
+  if (type === 'material') {
+    return {
+      ...base,
+      score: 0,
+      material: typeof legacy.material === 'string' ? legacy.material : '',
+      materialAlign: legacy.materialAlign === 'center' ? 'center' : 'left',
+      children: (legacyChildren ?? []).map((child) =>
+        migrateStoredQuestion(child, subject, legacyPaperStyle, false),
+      ),
+      answerLines: 0,
+      options: [],
+    }
+  }
+
+  return base
+}
+
+/** 旧版本存量数据迁移：旧 essay/answerStyle 转为明确语义题型，并补齐新结构。 */
+export function hydratePaper(paper: Paper): Paper {
+  const legacyLayout = paper.layout as PaperLayout & { answerStyle?: LegacyAnswerStyle }
+  const { answerStyle: legacyAnswerStyle = 'blank', ...layout } = legacyLayout
+  const subject = `${paper.name ?? ''} ${paper.info?.title ?? ''}`
+  return {
+    ...paper,
+    layout: { ...DEFAULT_LAYOUT, ...layout },
+    sections: paper.sections.map((section) => ({
+      ...section,
+      questions: section.questions.map((question) =>
+        migrateStoredQuestion(question, subject, legacyAnswerStyle),
+      ),
+    })),
+  }
 }
 
 function schedulePersist() {
@@ -183,6 +310,7 @@ function cloneQuestion(question: Question): Question {
     id: uid(),
     options: [...question.options],
     images: question.images?.map((image) => ({ ...image })),
+    parts: question.parts?.map((part) => ({ ...part, id: uid() })),
     children: question.children?.map(cloneQuestion),
   }
 }
@@ -200,6 +328,8 @@ function normalizeImportedPaper(raw: unknown, assetIdMap: Map<string, string>): 
   const layout = (typeof obj.layout === 'object' && obj.layout ? obj.layout : {}) as Record<string, unknown>
   const num = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback)
   const str = (v: unknown, fallback = '') => (typeof v === 'string' ? v : fallback)
+  const legacyPaperStyle: LegacyAnswerStyle = layout.answerStyle === 'lines' ? 'lines' : 'blank'
+  const subject = `${str(obj.name)} ${str(info.title)}`
 
   const normalizeImages = (raw: unknown): QuestionImage[] | undefined => {
     if (!Array.isArray(raw)) return undefined
@@ -220,9 +350,20 @@ function normalizeImportedPaper(raw: unknown, assetIdMap: Map<string, string>): 
 
   const normalizeQuestion = (rawQuestion: unknown, allowChildren: boolean): Question => {
     const q = (typeof rawQuestion === 'object' && rawQuestion ? rawQuestion : {}) as Record<string, unknown>
-    let type = QUESTION_TYPES.includes(q.type as QuestionType) ? (q.type as QuestionType) : 'essay'
-    if (type === 'material' && !allowChildren) type = 'essay'
-    return {
+    const rawType = str(q.type)
+    const effectiveStyle: LegacyAnswerStyle =
+      q.answerStyle === 'lines' || q.answerStyle === 'blank' ? q.answerStyle : legacyPaperStyle
+    let type: QuestionType =
+      rawType === 'essay'
+        ? inferLegacyEssayType(subject, str(q.stem), effectiveStyle)
+        : QUESTION_TYPES.includes(rawType as QuestionType)
+          ? (rawType as QuestionType)
+          : inferLegacyEssayType(subject, str(q.stem), effectiveStyle)
+    if (type === 'material' && !allowChildren) {
+      type = inferLegacyEssayType(subject, str(q.stem), effectiveStyle)
+    }
+
+    const base: Question = {
       id: uid(),
       type,
       stem: str(q.stem),
@@ -230,17 +371,69 @@ function normalizeImportedPaper(raw: unknown, assetIdMap: Map<string, string>): 
       options: Array.isArray(q.options) ? q.options.map((o) => str(o)) : [],
       answer: str(q.answer),
       answerLines: num(q.answerLines, 0),
-      answerStyle:
-        q.answerStyle === 'lines' || q.answerStyle === 'blank' ? q.answerStyle : undefined,
       images: normalizeImages(q.images),
-      ...(type === 'material'
-        ? {
-            material: str(q.material),
-            materialAlign: q.materialAlign === 'center' ? ('center' as const) : ('left' as const),
-            children: (Array.isArray(q.children) ? q.children : []).map((c) => normalizeQuestion(c, false)),
-          }
-        : {}),
     }
+
+    if (
+      type === 'segmentation' ||
+      (type === 'fill' && base.stem.includes('断句') && splitSegmentationText(base.stem).segmentationText)
+    ) {
+      const split = splitSegmentationText(base.stem)
+      return {
+        ...base,
+        type: 'segmentation',
+        stem: str(q.segmentationText) ? base.stem : split.stem,
+        segmentationText: str(q.segmentationText) || split.segmentationText,
+        options: [],
+        answerLines: 0,
+      }
+    }
+
+    if (type === 'solution') {
+      const parts = (Array.isArray(q.parts) ? q.parts : []).map((rawPart) => {
+        const part = (typeof rawPart === 'object' && rawPart ? rawPart : {}) as Record<string, unknown>
+        return {
+          id: uid(),
+          stem: str(part.stem),
+          score: Math.max(0, num(part.score, 0)),
+          answerLines: Math.max(0, num(part.answerLines, 0)),
+        }
+      })
+      const structured =
+        parts.length > 0 ? { stem: base.stem, parts } : splitSolutionText(base.stem, base.answerLines)
+      return { ...base, ...structured, options: [], answerLines: 0 }
+    }
+
+    if (type === 'composition') {
+      return {
+        ...base,
+        options: [],
+        compositionStyle:
+          q.compositionStyle === 'lines'
+            ? 'lines'
+            : q.compositionStyle === 'grid'
+              ? 'grid'
+              : /英语|English/.test(subject)
+                ? 'lines'
+                : 'grid',
+      }
+    }
+
+    if (type === 'material') {
+      return {
+        ...base,
+        score: 0,
+        options: [],
+        answerLines: 0,
+        material: str(q.material),
+        materialAlign: q.materialAlign === 'center' ? 'center' : 'left',
+        children: (Array.isArray(q.children) ? q.children : []).map((c) =>
+          normalizeQuestion(c, false),
+        ),
+      }
+    }
+
+    return base
   }
 
   const now = Date.now()
@@ -265,7 +458,6 @@ function normalizeImportedPaper(raw: unknown, assetIdMap: Map<string, string>): 
           : DEFAULT_LAYOUT.lineHeight,
       pageSize: layout.pageSize === 'a3-2col' ? 'a3-2col' : 'a4',
       sealLine: layout.sealLine === true,
-      answerStyle: layout.answerStyle === 'lines' ? 'lines' : 'blank',
       keepQuestionTogether: layout.keepQuestionTogether !== false,
       keepHeadingWithNext: layout.keepHeadingWithNext !== false,
       justifyPages: layout.justifyPages !== false,

@@ -25,7 +25,6 @@ export function simulatedPhysicsPaper(): Paper {
     '选择题答案须按要求填涂在答题卡上；非选择题须写出必要的文字说明、方程式和演算步骤。',
     '本卷为 QuiXam 原创排版测试卷，不是历年高考真题。',
   ]
-  paper.layout.answerStyle = 'blank'
   paper.sections = [
     {
       ...createSection(
@@ -146,7 +145,7 @@ export function simulatedPhysicsPaper(): Paper {
       ...createSection('非选择题', '本题共5小题，共57分。'),
       questions: [
         question({
-          type: 'essay',
+          type: 'solution',
           stem: '某同学用图示电路研究电动机的能量转化。电动机线圈电阻为 $8.0\\,\\Omega$，提升物体的总重力为 $1.5\\,\\mathrm N$。正常工作时电压表读数为 $3.0\\,\\mathrm V$，电流表读数为 $0.10\\,\\mathrm A$；位置传感器记录物体在 $4.0\\,\\mathrm s$ 内匀速上升 $0.12\\,\\mathrm m$。\n（1）求物体上升的速度；\n（2）求电动机的热功率、机械功率和效率；\n（3）说明实验中至少一种会导致效率测量出现偏差的因素。',
           score: 7,
           answer: '$v=3.0\\times10^{-2}\\,\\mathrm{m/s}$；热功率 $P_h=0.080\\,\\mathrm W$，机械功率 $P_m=0.045\\,\\mathrm W$，$\\eta=15\\%$。',
@@ -154,21 +153,21 @@ export function simulatedPhysicsPaper(): Paper {
           images: staticImage('physics-experiment', 78),
         }),
         question({
-          type: 'essay',
+          type: 'solution',
           stem: '用气垫导轨、光电门和带遮光片的滑块探究合外力与加速度的关系。遮光片宽度为 $d$，滑块从静止开始做匀加速直线运动，释放点到光电门的距离为 $x$，遮光时间为 $\\Delta t$。\n（1）写出滑块通过光电门时速度的近似表达式；\n（2）写出加速度的表达式；\n（3）若改变砝码质量后作出的 $a-F$ 图像不过原点，分析一种可能原因。',
           score: 9,
           answer: '$v=\\dfrac d{\\Delta t}$；$a=\\dfrac{d^2}{2x(\\Delta t)^2}$；可能存在阻力或力传感器未调零。',
           answerLines: 0,
         }),
         question({
-          type: 'essay',
+          type: 'calculation',
           stem: '质量为 $3.0\\times10^3\\,\\mathrm{kg}$ 的返回舱在着陆前最后 $1.0\\,\\mathrm m$ 内，四台相同反推发动机同时点火，使返回舱的速度由竖直向下 $8.0\\,\\mathrm{m/s}$ 匀减速到 $1.0\\,\\mathrm{m/s}$。取 $g=10\\,\\mathrm{m/s^2}$，忽略其他阻力。\n（1）求返回舱加速度的大小；\n（2）求四台发动机总推力；\n（3）求每台发动机在该过程中对返回舱所做的功。',
           score: 10,
           answer: '$a=31.5\\,\\mathrm{m/s^2}$；总推力 $1.245\\times10^5\\,\\mathrm N$；每台发动机做功 $3.11\\times10^4\\,\\mathrm J$。',
           answerLines: 0,
         }),
         question({
-          type: 'essay',
+          type: 'calculation',
           stem: '间距为 $L$ 的两条光滑平行金属轨道由倾斜段和水平段组成，倾角为 $30^\\circ$。倾斜段处在垂直轨道平面、磁感应强度为 $B$ 的匀强磁场中，上端接电容为 $C$ 的电容器；水平段右侧处在竖直向上的同强度磁场中，并接有电阻 $R$。质量为 $m$、电阻不计的导体棒从倾斜段由静止下滑，到达水平段时速度为 $v_0$。\n（1）写出导体棒在倾斜段稳定运动时的电流方向；\n（2）求导体棒进入右侧磁场瞬间的感应电动势；\n（3）若进入右侧磁场后仅受安培力阻碍，求棒最终停止时电阻产生的总热量，并说明能量转化关系。',
           score: 13,
           answer: '感应电动势 $E=BLv_0$；忽略其他损耗时 $Q=\\dfrac12mv_0^2$。',
@@ -176,7 +175,7 @@ export function simulatedPhysicsPaper(): Paper {
           images: staticImage('physics-rail', 78),
         }),
         question({
-          type: 'essay',
+          type: 'calculation',
           stem: '矩形区域 $MNQP$ 内有竖直向下、场强为 $E$ 的匀强电场。紧邻左边界 $MN$ 的右侧存在以 $MN$ 中点 O 为圆心、半径为 $r$ 的半圆形匀强磁场，磁场方向垂直纸面向里。带负电小球从 M 点以速率 $v$、与 MP 成角 $\\theta$ 射入磁场，重力不可忽略。\n（1）写出小球在磁场中做匀速圆周运动所需满足的电场条件；\n（2）若小球第一次离开磁场时速度恰好水平，求其圆周运动半径与 $\\theta$ 的关系；\n（3）小球离开磁场后与两竖直弹性挡板碰撞，碰撞时仅水平速度反向。建立小球竖直运动方程，并讨论它能够通过 N 点的条件。',
           score: 18,
           answer: '需满足 $|q|E=mg$；其余按圆周运动几何关系和分段抛体运动列式。',

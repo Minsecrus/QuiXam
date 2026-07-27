@@ -15,7 +15,6 @@ function choice(stem: string, options: string[], score: number, answer: string):
 export function official2024EnglishPaper(): Paper {
   const paper = basePaper('2024年高考综合改革适应性测试·英语', '英语', 120)
   paper.info.school = '2024年高考综合改革适应性测试'
-  paper.layout.answerStyle = 'lines'
   // 英语原卷正文密度较高，五号字更接近考试院公开的 12 页版面。
   paper.layout.fontSize = 'small'
   paper.sections = [
@@ -449,11 +448,12 @@ He is happy with the ____62____（improve）he sees in his students’ writing _
       ...createSection('写作', '共两节，满分40分。'),
       questions: [
         question({
-          type: 'essay',
+          type: 'composition',
           stem: '第一节（满分15分）\n你校英文报计划举办主题为“携手行动，节约粮食”的作文比赛。请你写一则活动通知，内容包括：\n（1）介绍活动目的；\n（2）说明参赛要求。\n注意：\n（1）写作词数应为80个左右；\n（2）请按如下格式在答题卡的相应位置作答。\nWelcome to Join the English Writing Competition',
           score: 15,
           answer: '',
           answerLines: 0,
+          compositionStyle: 'lines',
         }),
         material(
           `Last summer, Hilda worked as a volunteer with dolphin trainers at a sea life park. Her job was to make sure the tanks were free of any items so that the trainers could train the dolphins to fetch specific items. However, one day after cleaning, one of the dolphins, Maya, presented Hilda with a candy wrapper from the tank. When Katherine, the trainer, saw this, she blamed Hilda for her carelessness. Upset but not discouraged by this event, Hilda decided to do some spying on Maya.
@@ -462,11 +462,12 @@ During the tank sweeps, Maya had been swimming playfully, but now the dolphin st
 “Maya! Where did you get that?” demanded Katherine, taking the comb and throwing her a fish. “I know where she got it,” declared Hilda climbing out of the tank with a handful of items still wet from their watery, resting place. “What’s all this?” Katherine asked, obviously confused.`,
           [
             question({
-              type: 'essay',
+              type: 'composition',
               stem: '注意：\n（1）续写词数应为150个左右；\n（2）请按如下格式在答题卡的相应位置作答。\n“This is Maya’s secret,” Hilda said with a big smile.\nNow Katherine realized what had been going on.',
               score: 25,
               answer: '',
               answerLines: 0,
+              compositionStyle: 'lines',
             }),
           ],
           {

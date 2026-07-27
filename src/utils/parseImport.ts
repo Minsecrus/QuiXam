@@ -1,5 +1,6 @@
 import type { Question, Section } from '../types'
 import { createQuestion, createSection } from '../data/templates'
+import { splitSegmentationText, splitSolutionText } from '../data/paperFactory'
 
 export interface ParseResult {
   sections: Section[]
@@ -27,9 +28,30 @@ function finishQuestion(draft: Draft | null, into: Question[]) {
   if (!hasOptions && draft.options.length === 1) {
     stem = [stem, draft.options[0]].filter(Boolean).join('\n')
   }
-  const type = hasOptions ? 'single' : /_{3,}|＿{2,}/.test(stem) ? 'fill' : 'essay'
+  const type =
+    hasOptions
+      ? 'single'
+      : /断句/.test(stem) && /[A-Z].*[B-Z]/.test(stem)
+        ? 'segmentation'
+        : /作文|写作|写一篇|续写|不少于\s*\d+\s*字/.test(stem)
+          ? 'composition'
+          : /^[\s\S]*[（(]1[）)][\s\S]*[（(]2[）)]/.test(stem)
+            ? 'solution'
+            : /_{3,}|＿{2,}/.test(stem)
+              ? 'fill'
+              : 'shortAnswer'
   const question = createQuestion(type)
   question.stem = stem
+  if (type === 'solution') {
+    const structured = splitSolutionText(stem)
+    question.stem = structured.stem
+    question.parts = structured.parts
+  }
+  if (type === 'segmentation') {
+    const structured = splitSegmentationText(stem)
+    question.stem = structured.stem
+    question.segmentationText = structured.segmentationText
+  }
   if (hasOptions) question.options = draft.options
   if (draft.score !== null) question.score = draft.score
   into.push(question)

@@ -25,7 +25,6 @@ export function simulatedChemistryPaper(): Paper {
     '非选择题中的化学方程式须注明必要的反应条件。',
     '本卷为 QuiXam 原创排版测试卷，不是历年高考真题。',
   ]
-  paper.layout.answerStyle = 'blank'
   paper.sections = [
     {
       ...createSection(
@@ -188,7 +187,7 @@ export function simulatedChemistryPaper(): Paper {
       ...createSection('非选择题', '本题共4小题，共58分。'),
       questions: [
         question({
-          type: 'essay',
+          type: 'solution',
           stem: '工业上以菱锰矿（主要成分为 $\\ce{MnCO3}$，含少量 $\\ce{CaCO3}$、$\\ce{FeCO3}$、$\\ce{NiCO3}$）制取金属锰，流程如图。已知 $K_{sp}(\\ce{NiS})\\ll K_{sp}(\\ce{MnS})$，且 $K_{sp}[\\ce{Fe(OH)3}]\\ll K_{sp}[\\ce{Mn(OH)2}]$。\n（1）写出基态 $\\ce{Mn^2+}$ 的价层电子排布，并判断 $\\ce{CO3^2-}$ 的空间结构；\n（2）写出两种可加快“酸浸”速率的措施；\n（3）酸浸时加入少量 $\\ce{MnO2}$ 将 $\\ce{Fe^2+}$ 氧化为 $\\ce{Fe^3+}$，写出离子方程式；\n（4）解释调 pH 可优先除铁、加入 $\\ce{(NH4)2S}$ 可优先除镍的原因；\n（5）说明使用硫酸而不使用浓盐酸进行酸浸的一项安全或工艺理由。',
           score: 14,
           answer: '$\\ce{Mn^2+}$ 为 $3d^5$，$\\ce{CO3^2-}$ 为平面三角形；氧化反应：$\\ce{MnO2 + 2Fe^2+ + 4H+ -> Mn^2+ + 2Fe^3+ + 2H2O}$。',
@@ -196,7 +195,7 @@ export function simulatedChemistryPaper(): Paper {
           images: staticImage('chemistry-process', 92),
         }),
         question({
-          type: 'essay',
+          type: 'solution',
           stem: '亚硝酸钙 $\\ce{Ca(NO2)2}$ 可用作混凝土防冻阻锈剂。实验室用干燥的 $\\ce{NO}$ 与 $\\ce{CaO2}$ 反应制备产品，装置示意如图。\n（1）指出装置Ⅰ、Ⅲ和Ⅴ分别承担的主要作用；\n（2）实验开始前先通入一段时间 $\\ce{N2}$，说明目的；\n（3）用铜与稀硝酸制 $\\ce{NO}$，写出反应的离子方程式；\n（4）写出 $\\ce{NO}$ 与 $\\ce{CaO2}$ 生成 $\\ce{Ca(NO2)2}$ 的化学方程式；\n（5）若尾气用酸性 $\\ce{K2Cr2O7}$ 溶液吸收，说明该装置不能倒吸的结构要求；\n（6）设计一个实验检验产品中是否混有硝酸根。',
           score: 14,
           answer: '先通 $\\ce{N2}$ 用于排尽空气，避免 $\\ce{NO}$ 被氧化并防止副反应；$\\ce{3Cu + 2NO3- + 8H+ -> 3Cu^2+ + 2NO ^ + 4H2O}$。',
@@ -204,7 +203,7 @@ export function simulatedChemistryPaper(): Paper {
           images: staticImage('chemistry-apparatus', 94),
         }),
         question({
-          type: 'essay',
+          type: 'solution',
           stem: '综合利用二氧化碳涉及反应：①$\\ce{CO2(g) + 3H2(g) <=> CH3OH(g) + H2O(g)}$，$\\Delta H_1<0$；②$\\ce{CO2(g) + H2(g) <=> CO(g) + H2O(g)}$，$\\Delta H_2>0$。反应历程和温度对转化率、选择性的影响如图。\n（1）根据反应历程图说明决定总反应速率的步骤应如何判断；\n（2）在 $1\\,\\mathrm L$ 恒容容器中投入 $1.0\\,\\mathrm{mol}\\ \\ce{CO2}$ 和 $3.0\\,\\mathrm{mol}\\ \\ce{H2}$，只发生反应①。平衡时生成 $0.50\\,\\mathrm{mol}\\ \\ce{CH3OH}$，总压强为 $6.0\\,\\mathrm{MPa}$，计算 $K_p$；\n（3）解释升高温度时甲醇选择性下降的原因；\n（4）冰晶体中水分子之间除范德华力外还存在何种主要作用力；\n（5）熔融碳酸盐燃料电池以 $\\ce{CO3^2-}$ 导电，写出通入氢气一极的电极反应。',
           score: 15,
           answer: '$K_p=\\dfrac1{27}\\,\\mathrm{MPa^{-2}}$；冰中有氢键；负极反应可写为 $\\ce{H2 + CO3^2- - 2e- -> H2O + CO2}$。',
@@ -212,7 +211,7 @@ export function simulatedChemistryPaper(): Paper {
           images: staticImage('chemistry-energy', 78),
         }),
         question({
-          type: 'essay',
+          type: 'solution',
           stem: '某含氮杂环化合物的合成路线如图。已知丙烯在高温下与氯气发生烯丙位取代生成 A，A 与溴加成生成 B，B 在强碱水溶液中水解可得到甘油；苯酚 D 经硝化、还原得到氨基苯酚 F，之后与含醛基中间体发生缩合和环化。\n（1）写出 A 的名称和结构简式；\n（2）指出 F 中的官能团，并判断 B→甘油的反应类型；\n（3）甘油脱水可生成丙烯醛 $\\ce{CH2=CHCHO}$，写出丙烯醛与银氨溶液反应的化学方程式；\n（4）写出 B 的结构简式，并说明其水解时需要足量碱的原因；\n（5）若某中间体同时含酚羟基、氨基和醛基，列举两种可用于区分这三类官能团的特征反应。',
           score: 15,
           answer: 'A 为 3-氯丙烯（烯丙基氯）$\\ce{CH2=CHCH2Cl}$；F 含酚羟基和氨基；B→甘油属于水解（取代）反应。',

@@ -1,4 +1,26 @@
-export type QuestionType = 'single' | 'multiple' | 'fill' | 'essay' | 'material'
+export type LeafQuestionType =
+  | 'single'
+  | 'multiple'
+  | 'fill'
+  | 'segmentation'
+  | 'calculation'
+  | 'shortAnswer'
+  | 'solution'
+  | 'composition'
+
+export type QuestionType = LeafQuestionType | 'material'
+
+export type CompositionStyle = 'grid' | 'lines'
+
+export interface SolutionPart {
+  id: string
+  /** 小问题干；需要在句中作答的位置直接写 `______` */
+  stem: string
+  /** 小问分值；原卷未单独标注时为 0 */
+  score: number
+  /** 小问末尾追加的横线数；句中空位不计入这里，0 表示不追加 */
+  answerLines: number
+}
 
 /** 题目附图：图片二进制存 IndexedDB assets 表，这里只存引用 */
 export interface QuestionImage {
@@ -11,17 +33,27 @@ export interface QuestionImage {
 export interface Question {
   id: string
   type: QuestionType
-  /** 题干，支持 $...$ 行内公式，换行用 \n；材料题可留空（材料放 material 字段） */
+  /** 题干，支持 `$...$` 行内公式与单反引号代码，换行用 \n；材料题可留空（材料放 material 字段） */
   stem: string
   score: number
   /** 选择题选项（single / multiple 使用） */
   options: string[]
   /** 参考答案（教师版打印用） */
   answer: string
-  /** 解答题答题区行数（决定预留高度） */
+  /**
+   * 题后答题区行数：
+   * - calculation：纯留白
+   * - shortAnswer：横线
+   * - composition：方格或横线
+   * - solution：不用此字段，改由每个 parts[].answerLines 控制
+   */
   answerLines: number
-  /** 答题区样式覆盖；留空则跟随试卷级 PaperLayout.answerStyle */
-  answerStyle?: AnswerAreaStyle
+  /** 断句题中与作答说明分开的待断句文本 */
+  segmentationText?: string
+  /** 解答题的小问；题干内空位和题后横线可按小问混用 */
+  parts?: SolutionPart[]
+  /** 作文答题纸样式；语文通常为 grid，英语通常为 lines */
+  compositionStyle?: CompositionStyle
   /**
    * 材料题（type='material'）共享材料，楷体渲染。
    * 行首标记：`#` 居中标题；`@` 居中仿宋作者行（古诗作者惯例）。
@@ -64,9 +96,6 @@ export type LineHeightLevel = 'compact' | 'normal' | 'loose'
 /** 纸张：A4 单栏 或 A3 横向两栏（8K 对折卷） */
 export type PageSize = 'a4' | 'a3-2col'
 
-/** 答题区样式：空白（数学、物理）或横线（其余科目） */
-export type AnswerAreaStyle = 'blank' | 'lines'
-
 export interface PaperLayout {
   bodyFont: FontPreset
   fontSize: FontSizeLevel
@@ -74,8 +103,6 @@ export interface PaperLayout {
   pageSize: PageSize
   /** 左侧密封线（装订线 + 竖排班级/姓名/考号） */
   sealLine: boolean
-  /** 全卷解答题答题区默认样式，可被单题 Question.answerStyle 覆盖 */
-  answerStyle: AnswerAreaStyle
   /**
    * 尽量让整题落在同一页/同一栏。关闭后按内容紧凑排布，版面更省纸。
    * 无论开关，单题高于一整栏时都会被切开——不溢出是硬约束。
@@ -85,7 +112,7 @@ export interface PaperLayout {
   keepHeadingWithNext: boolean
   /**
    * 自然拉伸撑满整页：把每页的剩余空间按"灵活度"摊到各间隙上，
-   * 优先拉大题之间、其次小题之间，再不够才动行距。末页不生效。
+   * 优先拉大题之间、其次小题之间；正文行距保持不变。末页不生效。
    */
   justifyPages: boolean
 }
@@ -107,7 +134,6 @@ export const DEFAULT_LAYOUT: PaperLayout = {
   lineHeight: 'normal',
   pageSize: 'a4',
   sealLine: false,
-  answerStyle: 'blank',
   keepQuestionTogether: true,
   keepHeadingWithNext: true,
   justifyPages: true,

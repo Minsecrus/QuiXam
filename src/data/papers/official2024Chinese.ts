@@ -11,7 +11,6 @@ import { basePaper, createSection, material, question } from '../paperFactory'
 export function official2024ChinesePaper(): Paper {
   const paper = basePaper('2024年高考综合改革适应性测试·语文（交错带版）', '语文', 150)
   paper.info.school = '2024年高考综合改革适应性测试'
-  paper.layout.answerStyle = 'lines'
   paper.sections = [
     {
       ...createSection('现代文阅读', '本题共9小题，35分。'),
@@ -87,7 +86,7 @@ export function official2024ChinesePaper(): Paper {
               ],
             }),
             question({
-              type: 'essay',
+              type: 'shortAnswer',
               stem: '哪些因素对欧亚大陆游牧业的产生起了重要作用？请结合材料简要概括。',
               score: 6,
               answer: '',
@@ -173,14 +172,14 @@ export function official2024ChinesePaper(): Paper {
               answer: 'B',
             }),
             question({
-              type: 'essay',
+              type: 'shortAnswer',
               stem: '小说直至最后才交待刘主任是个盲人，但前文已有多处细节予以暗示，请找出相关细节。',
               score: 5,
               answer: '',
               answerLines: 0,
             }),
             question({
-              type: 'essay',
+              type: 'shortAnswer',
               stem: '小说从曾明的角度讲述故事，有怎样的艺术效果？请结合小说简要分析。',
               score: 6,
               answer: '',
@@ -206,10 +205,10 @@ export function official2024ChinesePaper(): Paper {
 ［注］①李靖：唐代名将，封卫国公，世称李卫公。②死间：指派往敌方的间谍不能脱身而为敌方所杀。`,
           [
             question({
-              type: 'multiple',
-              stem: '材料一中画波浪线的部分有三处需要断句，请选择相应位置。涂对一处给1分，涂黑超过三处不给分。\n督兵A疾B进C行D至阴山E遇其斥候F千余G皆俘H以随军。',
+              type: 'segmentation',
+              stem: '材料一中画波浪线的部分有三处需要断句，请选择相应位置。涂对一处给1分，涂黑超过三处不给分。',
+              segmentationText: '督兵A疾B进C行D至阴山E遇其斥候F千余G皆俘H以随军。',
               score: 3,
-              options: ['位置A', '位置B', '位置C', '位置D', '位置E', '位置F', '位置G', '位置H'],
               answer: 'CEG',
             }),
             question({
@@ -237,14 +236,14 @@ export function official2024ChinesePaper(): Paper {
               answer: 'B',
             }),
             question({
-              type: 'essay',
+              type: 'shortAnswer',
               stem: '把材料中画横线的句子翻译成现代汉语。\n（1）颉利虽外请朝谒，而内怀迟疑，靖揣知其意。\n（2）周公大义灭亲，况一使人乎？灼无疑矣！',
               score: 8,
               answer: '',
               answerLines: 0,
             }),
             question({
-              type: 'essay',
+              type: 'shortAnswer',
               stem: '李靖在与突厥的战争中不顾唐俭安全的原因是什么？',
               score: 3,
               answer: '',
@@ -274,7 +273,7 @@ export function official2024ChinesePaper(): Paper {
               answer: 'D',
             }),
             question({
-              type: 'essay',
+              type: 'shortAnswer',
               stem: '这首词表达了作者什么样的思想感情？请简要分析。',
               score: 6,
               answer: '',
@@ -337,14 +336,14 @@ export function official2024ChinesePaper(): Paper {
 比如生活在世界最寒冷大陆上的企鹅，为了适应寒冷的环境，它们的身体天然就有神奇的保温功能。它们的静脉缠绕在动脉上，使动脉内的血液保持略微温暖。当它们潜入寒冷的海水中捕猎时，心率会降低15%，这有助于身体保存更多的能量，而这些能量又可以用来使身体产生更多的热量。甚至它们身上的羽毛也是密密麻麻地重叠在一起，保护它们免受刺骨的寒风和冰冷海水的侵袭。`,
           [
             question({
-              type: 'essay',
+              type: 'shortAnswer',
               stem: '请在文中横线处补写恰当的语句，使整段文字语意完整连贯，内容贴切，逻辑严密，每处不超过12个字。',
               score: 6,
               answer: '',
               answerLines: 0,
             }),
             question({
-              type: 'essay',
+              type: 'shortAnswer',
               stem: '简述第三自然段的主要内容。要求使用包含因果关系的句子，表达准确流畅，不超过45个字。',
               score: 5,
               answer: '',
@@ -361,7 +360,7 @@ export function official2024ChinesePaper(): Paper {
       ...createSection('写作', '本题共1小题，60分。'),
       questions: [
         question({
-          type: 'essay',
+          type: 'composition',
           stem: '阅读下面的材料，根据要求写作。\n本试卷现代文阅读材料Ⅰ提到自然带边缘交错地带较为敏感，当环境出现波动时，它们会最先发生改变，进而推动整个地区产生变化。其实，历史发展、社会变迁、文化传承、科技创新乃至生活中的问题解决，都有类似的“交错带”。\n请以“交错带”为话题，写一篇文章。\n要求：选准角度，确定立意，明确文体，自拟标题；不要套作，不得抄袭；不得泄露个人信息；不少于800字。',
           score: 60,
           answer: '',

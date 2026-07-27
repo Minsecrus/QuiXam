@@ -8,7 +8,7 @@
  * 间隙的"灵活度"：竖排两端对齐时，页面剩余空间优先摊到灵活度高的间隙上。
  *
  * 灵活度 0 不是"不能拉"，而是"最后才拉"——正权重的间隙按比例吃满各自上限后，
- * 余量仍会落到 0 权重间隙，再不够才去动行距。分级注水，而不是一刀切。
+ * 余量仍会落到 0 权重间隙；正文行距不参与撑页。
  */
 export const GAP_WEIGHT = {
   /** 题内（题干↔选项↔答题区）、大题标题与其首题之间：标题向下绑定，最后才拉 */
@@ -316,19 +316,18 @@ export function paginate(groups: FlowGroup[], options: PaginateOptions): Planned
 const MAX_GAP_LINES = 3
 /** 0 权重间隙的单个上限：约半行高，它们本就该紧贴 */
 const MAX_TIGHT_GAP_LINES = 0.5
-/** 行距最多被拉大到原来的这个比例 */
-const MAX_LINE_STRETCH_RATIO = 0.15
+/** 行距不参与撑页，避免正文在内容较少的页面被二次拉松 */
+const MAX_LINE_STRETCH_RATIO = 0
 /** 页眉与正文之间最多吃掉共享余量的比例 */
 const MAX_BANNER_SHARE = 0.4
 
 /**
  * 竖排两端对齐：把剩余空间按灵活度分级摊出去，让版面自然撑满整页。
  *
- * 分四档注水，前一档吃满上限后余量才落到下一档：
+ * 分三档注水，前一档吃满上限后余量才落到下一档：
  *   1. 正权重间隙（大题之间 2、小题之间 1）按权重比例分
  *   2. 0 权重间隙（题内、大题标题与其首题）—— 灵活度 0 是"最后才拉"，不是"不能拉"
- *   3. 行距
- *   4. 仍有余量就留在页底
+ *   3. 仍有余量就留在页底
  *
  * 末页不参与 —— 卷子的最后一页本就该自然收尾，硬撑满反而不像话。
  * 每档都有单项上限：否则一页只有两道题时，剩余空间会全摊到一个间隙上，
@@ -393,8 +392,8 @@ function justifyPages(pages: PlannedPage[], baseLineHeight: number) {
         remaining -= pour(gaps, remaining, maxTightGap, (slice) => (slice.gapWeight === 0 ? 1 : 0))
       }
 
-      // 行距档：估行数只会高估，故实际增长不会超过 remaining，不溢出的硬约束不受影响
-      if (remaining > 0.5 && line > 0) {
+      // 保留计算支路便于以后按需恢复；当前比例为 0，正文行距始终保持用户选择值。
+      if (remaining > 0.5 && line > 0 && MAX_LINE_STRETCH_RATIO > 0) {
         const totalLines = column.reduce((sum, slice) => sum + slice.estLines, 0)
         if (totalLines > 0) {
           lineStretch[index] = Math.min(remaining / totalLines, line * MAX_LINE_STRETCH_RATIO)

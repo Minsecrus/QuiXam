@@ -33,7 +33,7 @@ export async function exportPaperJson(paper: Paper): Promise<string> {
     const blob = await getAsset(id)
     if (blob) assets[id] = await blobToDataUrl(blob)
   }
-  return JSON.stringify({ schemaVersion: 2, ...paper, assets }, null, 2)
+  return JSON.stringify({ schemaVersion: 3, ...paper, assets }, null, 2)
 }
 
 export async function dataUrlToBlob(dataUrl: string): Promise<Blob> {

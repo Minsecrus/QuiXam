@@ -18,7 +18,11 @@ export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   single: '单选题',
   multiple: '多选题',
   fill: '填空题',
-  essay: '解答题',
+  segmentation: '断句题',
+  calculation: '计算题',
+  shortAnswer: '简答题',
+  solution: '解答题',
+  composition: '作文',
   material: '材料题',
 }
 

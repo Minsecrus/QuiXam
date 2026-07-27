@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import katex from 'katex'
 import 'katex/contrib/mhchem'
 
-type Segment = { math: boolean; value: string }
+type Segment = { kind: 'text' | 'math' | 'code' | 'blank'; value: string }
 
 /**
  * 公式 → HTML 的缓存。
@@ -22,45 +22,66 @@ function renderMath(tex: string): string {
   return html
 }
 
-/** 把文本按 $...$ 切分成普通文本与公式段 */
-function splitMath(text: string): Segment[] {
+/** 把文本按 `$...$` 公式、单反引号行内代码和句中答题横线切分。 */
+function splitRichText(text: string): Segment[] {
   const segments: Segment[] = []
-  const pattern = /\$([^$]+)\$/g
+  const pattern = /\$([^$]+)\$|`([^`\n]+)`|(_{3,}|＿{2,})/g
   let lastIndex = 0
   let match: RegExpExecArray | null
   while ((match = pattern.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      segments.push({ math: false, value: text.slice(lastIndex, match.index) })
+      segments.push({ kind: 'text', value: text.slice(lastIndex, match.index) })
     }
-    segments.push({ math: true, value: match[1] })
+    segments.push({
+      kind: match[1] !== undefined ? 'math' : match[2] !== undefined ? 'code' : 'blank',
+      value: match[1] ?? match[2] ?? match[3],
+    })
     lastIndex = match.index + match[0].length
   }
   if (lastIndex < text.length) {
-    segments.push({ math: false, value: text.slice(lastIndex) })
+    segments.push({ kind: 'text', value: text.slice(lastIndex) })
   }
   return segments
 }
 
 /**
- * 渲染带 $...$ 行内公式的多行文本。
+ * 渲染带 `$...$` 行内公式与单反引号代码的多行文本。
  * mhchem 已注册到 KaTeX，因此化学式可写成 `$\ce{2H2 + O2 -> 2H2O}$`。
  */
 export function MathText({ text }: { text: string }) {
-  const segments = useMemo(() => splitMath(text), [text])
+  const segments = useMemo(() => splitRichText(text), [text])
 
   return (
     <>
-      {segments.map((segment, index) =>
-        segment.math ? (
+      {segments.map((segment, index) => {
+        if (segment.kind === 'math') {
+          return (
           <span
             key={index}
             className="math-inline"
             dangerouslySetInnerHTML={{ __html: renderMath(segment.value) }}
           />
-        ) : (
-          <span key={index}>{segment.value}</span>
-        ),
-      )}
+          )
+        }
+        if (segment.kind === 'code') {
+          return (
+            <code key={index} className="code-inline">
+              {segment.value}
+            </code>
+          )
+        }
+        if (segment.kind === 'blank') {
+          return (
+            <span
+              key={index}
+              className="inline-answer-blank"
+              style={{ width: `${Math.max(2.5, segment.value.length * 0.72)}em` }}
+              aria-label="答题空位"
+            />
+          )
+        }
+        return <span key={index}>{segment.value}</span>
+      })}
     </>
   )
 }

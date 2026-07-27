@@ -20,7 +20,7 @@ import {
 } from '../utils/paginate'
 import { MathText } from './MathText'
 import { AssetImage } from './AssetImage'
-import type { AnswerAreaStyle, Paper, Question, QuestionImage } from '../types'
+import type { Paper, Question, QuestionImage, SolutionPart } from '../types'
 
 /** 页脚"第 X 页 共 Y 页"占用的高度 */
 const FOOTER_MM = 8
@@ -62,6 +62,20 @@ function optionColumns(options: string[]): 1 | 2 | 4 {
   if (max <= 12) return 4
   if (max <= 30) return 2
   return 1
+}
+
+function QuestionStemText({ text }: { text: string }) {
+  return (
+    <>
+      {text.split('\n').map((line, index) => {
+        return (
+          <span key={index} className={index > 0 ? 'q-stem__line' : undefined}>
+            <MathText text={line} />
+          </span>
+        )
+      })}
+    </>
+  )
 }
 
 function QuestionActions({ questionId }: { questionId: string }) {
@@ -114,8 +128,16 @@ function QuestionActions({ questionId }: { questionId: string }) {
   )
 }
 
-/** 材料的一行：行首 `#` 居中标题，`@` 居中仿宋作者行（古诗惯例），其余按普通段落渲染 */
+const MATERIAL_LABEL_PATTERN = /^材料(?:[一二三四五六七八九十\d]+)?[：:]?$/
+const MATERIAL_SOURCE_PATTERN = /^[（(](?:摘编自|节选自|选自|改编自|有删改|原载于).*[）)]$/
+
+/**
+ * 材料的一行：
+ * `#` 为居中标题，`@` 为居中仿宋作者行，来源说明右对齐，
+ * “材料一：”等标签不缩进，其余行作为正文段落渲染。
+ */
 function materialLine(line: string, key: number) {
+  const trimmed = line.trim()
   if (line.startsWith('#')) {
     return (
       <p key={key} className="material-title">
@@ -130,8 +152,22 @@ function materialLine(line: string, key: number) {
       </p>
     )
   }
+  if (MATERIAL_SOURCE_PATTERN.test(trimmed)) {
+    return (
+      <p key={key} className="material-source">
+        <MathText text={trimmed} />
+      </p>
+    )
+  }
+  if (MATERIAL_LABEL_PATTERN.test(trimmed)) {
+    return (
+      <p key={key} className="material-label">
+        <MathText text={trimmed} />
+      </p>
+    )
+  }
   return (
-    <p key={key} className="material-line">
+    <p key={key} className="material-line material-prose">
       <MathText text={line} />
     </p>
   )
@@ -238,10 +274,24 @@ const QuestionBlock = memo(function QuestionBlock({
       <QuestionImages images={floatImages} />
       <div className="q-stem">
         <span className="q-number">{number}．</span>
-        {question.type === 'essay' ? (
+        {question.type === 'calculation' ||
+        question.type === 'shortAnswer' ||
+        question.type === 'solution' ||
+        question.type === 'composition' ? (
           <span className="q-score">（本小题满分{question.score}分）</span>
         ) : null}
-        {question.stem ? <MathText text={question.stem} /> : <span className="no-print">（空题干）</span>}
+        {question.stem ? (
+          <QuestionStemText text={question.stem} />
+        ) : question.type === 'solution' && (question.parts?.length ?? 0) > 0 ? null : (
+          <span className="no-print">（空题干）</span>
+        )}
+        {question.type === 'segmentation' && question.segmentationText ? (
+          <span className="q-stem__segmentation">
+            <MathText text={question.segmentationText} />
+          </span>
+        ) : (
+          null
+        )}
       </div>
 
       <QuestionImages images={blockImages} />
@@ -262,12 +312,48 @@ const QuestionBlock = memo(function QuestionBlock({
   )
 })
 
+/** 解答题的小问正文。句中 `______` 由 MathText 渲染为内嵌答题线。 */
+const SolutionPartBlock = memo(function SolutionPartBlock({
+  questionId,
+  part,
+}: {
+  questionId: string
+  part: SolutionPart
+}) {
+  const select = useSelectHandler(questionId)
+  const selected = useIsSelectedQuestion(questionId)
+  return (
+    <div
+      className={`q-solution-part ${selected ? 'is-selected' : ''}`}
+      onClick={select}
+    >
+      <QuestionStemText text={part.stem} />
+    </div>
+  )
+})
+
 /** 答题横线：每条一格，等高，故可按整行切分到下一页 */
 function AnswerLines({ count }: { count: number }) {
   return (
     <div className="answer-area" aria-hidden="true">
       {Array.from({ length: count }).map((_, index) => (
         <span key={index} className="answer-line" />
+      ))}
+    </div>
+  )
+}
+
+/** 作文方格按整行分页；每行固定 20 格，避免切到半格。 */
+function CompositionRows({ count, style }: { count: number; style: 'grid' | 'lines' }) {
+  if (style === 'lines') return <AnswerLines count={count} />
+  return (
+    <div className="composition-grid" aria-hidden="true">
+      {Array.from({ length: count }).map((_, row) => (
+        <span key={row} className="composition-grid__row">
+          {Array.from({ length: 20 }).map((__, column) => (
+            <span key={column} className="composition-grid__cell" />
+          ))}
+        </span>
       ))}
     </div>
   )
@@ -397,11 +483,10 @@ function materialPieces(question: Question, firstInSection: boolean): RenderPiec
   return pieces
 }
 
-/** 解答题答题区拆成独立片段，这样超长答题区能跨页而不是把整题顶到下一页 */
-function answerPieces(question: Question, fallback: AnswerAreaStyle): RenderPiece[] {
-  if (question.type !== 'essay' || question.answerLines <= 0) return []
-  const style = question.answerStyle ?? fallback
-  if (style === 'lines') {
+/** 题后答题区由语义题型决定，不再依赖全卷或单题的样式开关。 */
+function answerPieces(question: Question): RenderPiece[] {
+  if (question.answerLines <= 0) return []
+  if (question.type === 'shortAnswer') {
     return [
       {
         id: `lines:${question.id}`,
@@ -412,20 +497,60 @@ function answerPieces(question: Question, fallback: AnswerAreaStyle): RenderPiec
       },
     ]
   }
-  return [
-    {
-      id: `space:${question.id}`,
-      kind: 'space',
-      gapWeight: GAP_WEIGHT.tight,
-      em: question.answerLines * 2.2,
-    },
-  ]
+  if (question.type === 'calculation') {
+    return [
+      {
+        id: `space:${question.id}`,
+        kind: 'space',
+        gapWeight: GAP_WEIGHT.tight,
+        em: question.answerLines * 2.2,
+      },
+    ]
+  }
+  if (question.type === 'composition') {
+    return [
+      {
+        id: `composition:${question.id}`,
+        kind: 'rows',
+        gapWeight: GAP_WEIGHT.tight,
+        count: question.answerLines,
+        render: (_start, count) => (
+          <CompositionRows count={count} style={question.compositionStyle ?? 'grid'} />
+        ),
+      },
+    ]
+  }
+  return []
+}
+
+/** 解答题按小问拆分；只有 answerLines > 0 的小问才在其后追加横线。 */
+function solutionPieces(question: Question): RenderPiece[] {
+  if (question.type !== 'solution') return []
+  return (question.parts ?? []).flatMap((part): RenderPiece[] => {
+    const pieces: RenderPiece[] = [
+      {
+        id: `part:${question.id}:${part.id}`,
+        kind: 'atom',
+        gapWeight: GAP_WEIGHT.tight,
+        node: <SolutionPartBlock questionId={question.id} part={part} />,
+      },
+    ]
+    if (part.answerLines > 0) {
+      pieces.push({
+        id: `part-lines:${question.id}:${part.id}`,
+        kind: 'rows',
+        gapWeight: GAP_WEIGHT.tight,
+        count: part.answerLines,
+        render: (_start, count) => <AnswerLines count={count} />,
+      })
+    }
+    return pieces
+  })
 }
 
 /** 把整卷摊平成线性的分组序列；分页只认这个序列，不关心题目结构 */
 function buildGroups(paper: Paper): { body: RenderGroup[]; answers: RenderGroup[] } {
   const starts = sectionStartNumbers(paper)
-  const fallback = paper.layout.answerStyle
   const body: RenderGroup[] = []
 
   /** first：本大题的第一题，它与大题标题之间不该被拉开（标题向下绑定） */
@@ -439,7 +564,8 @@ function buildGroups(paper: Paper): { body: RenderGroup[]; answers: RenderGroup[
         gapWeight: first ? GAP_WEIGHT.tight : GAP_WEIGHT.question,
         node: <QuestionBlock question={question} number={number} />,
       },
-      ...answerPieces(question, fallback),
+      ...solutionPieces(question),
+      ...answerPieces(question),
     ],
   })
 
@@ -578,7 +704,8 @@ function PaperPages({ paper }: { paper: Paper }) {
     return map
   }, [body, answers])
 
-  const typographyClass =`paper-type body-${paper.layout.bodyFont} size-${paper.layout.fontSize} lh-${paper.layout.lineHeight}`
+  const isChinesePaper = /语文/.test(`${paper.name} ${paper.info.title}`)
+  const typographyClass = `paper-type body-${paper.layout.bodyFont} size-${paper.layout.fontSize} lh-${paper.layout.lineHeight}${isChinesePaper ? ' is-chinese' : ''}`
 
   const paperHead = (
     <>

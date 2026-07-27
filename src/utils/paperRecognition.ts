@@ -1,8 +1,19 @@
-import { DEFAULT_LAYOUT, type AnswerAreaStyle, type Paper, type Question, type QuestionType, type Section } from '../types'
+import {
+  DEFAULT_LAYOUT,
+  type CompositionStyle,
+  type LeafQuestionType,
+  type Paper,
+  type Question,
+  type QuestionType,
+  type Section,
+} from '../types'
 import { uid } from './id'
 
-type LeafQuestionType = Exclude<QuestionType, 'material'>
-type QuestionAnswerStyle = AnswerAreaStyle | 'inherit'
+export interface RecognizedSolutionPart {
+  stem: string
+  score: number
+  answerLines: number
+}
 
 export interface RecognizedLeafQuestion {
   type: LeafQuestionType
@@ -11,7 +22,9 @@ export interface RecognizedLeafQuestion {
   options: string[]
   answer: string
   answerLines: number
-  answerStyle: QuestionAnswerStyle
+  segmentationText: string
+  compositionStyle: CompositionStyle
+  parts: RecognizedSolutionPart[]
 }
 
 export interface RecognizedQuestion {
@@ -21,7 +34,9 @@ export interface RecognizedQuestion {
   options: string[]
   answer: string
   answerLines: number
-  answerStyle: QuestionAnswerStyle
+  segmentationText: string
+  compositionStyle: CompositionStyle
+  parts: RecognizedSolutionPart[]
   material: string
   materialAlign: 'left' | 'center'
   children: RecognizedLeafQuestion[]
@@ -43,9 +58,6 @@ export interface RecognizedPaper {
     fullScore: number
     notices: string[]
   }
-  layout: {
-    answerStyle: AnswerAreaStyle
-  }
   sections: RecognizedSection[]
 }
 
@@ -64,7 +76,16 @@ interface RecognitionConfig {
 const leafQuestionProperties = {
   type: {
     type: 'string',
-    enum: ['single', 'multiple', 'fill', 'essay'],
+    enum: [
+      'single',
+      'multiple',
+      'fill',
+      'segmentation',
+      'calculation',
+      'shortAnswer',
+      'solution',
+      'composition',
+    ],
     description: '题型。材料题的子题不能再是 material。',
   },
   stem: {
@@ -90,13 +111,46 @@ const leafQuestionProperties = {
   answerLines: {
     type: 'integer',
     minimum: 0,
-    maximum: 60,
-    description: '根据原卷答题空间估计的预留行数；客观题通常为 0。',
+    maximum: 100,
+    description:
+      '题后答题区行数。calculation 表示纯留白，shortAnswer 表示横线，composition 表示作文行；solution 和客观题必须为 0。',
   },
-  answerStyle: {
+  segmentationText: {
     type: 'string',
-    enum: ['inherit', 'blank', 'lines'],
-    description: '单题答题区样式；通常使用 inherit。',
+    description: '断句题的待断句原文；只有 segmentation 使用，其余题型为空字符串。',
+  },
+  compositionStyle: {
+    type: 'string',
+    enum: ['grid', 'lines'],
+    description: '作文答题区：语文通常 grid，英语通常 lines；非作文题统一填 lines。',
+  },
+  parts: {
+    type: 'array',
+    maxItems: 30,
+    items: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        stem: {
+          type: 'string',
+          description: '不含整题题号的小问题干；句中答题位在准确位置写成 ______。',
+        },
+        score: {
+          type: 'number',
+          minimum: 0,
+          maximum: 200,
+          description: '该小问分值；原卷未单列时为 0。',
+        },
+        answerLines: {
+          type: 'integer',
+          minimum: 0,
+          maximum: 60,
+          description: '只表示该小问结束后追加的横线数；句中已有 ______ 时不计入。',
+        },
+      },
+      required: ['stem', 'score', 'answerLines'],
+    },
+    description: 'solution 的小问数组；其他题型为空数组。',
   },
 } as const
 
@@ -104,7 +158,17 @@ const leafQuestionSchema = {
   type: 'object',
   additionalProperties: false,
   properties: leafQuestionProperties,
-  required: ['type', 'stem', 'score', 'options', 'answer', 'answerLines', 'answerStyle'],
+  required: [
+    'type',
+    'stem',
+    'score',
+    'options',
+    'answer',
+    'answerLines',
+    'segmentationText',
+    'compositionStyle',
+    'parts',
+  ],
 } as const
 
 const questionSchema = {
@@ -114,7 +178,17 @@ const questionSchema = {
     ...leafQuestionProperties,
     type: {
       type: 'string',
-      enum: ['single', 'multiple', 'fill', 'essay', 'material'],
+      enum: [
+        'single',
+        'multiple',
+        'fill',
+        'segmentation',
+        'calculation',
+        'shortAnswer',
+        'solution',
+        'composition',
+        'material',
+      ],
       description: '共享文章或材料及其若干子题使用 material，其余使用对应叶子题型。',
     },
     material: {
@@ -140,7 +214,9 @@ const questionSchema = {
     'options',
     'answer',
     'answerLines',
-    'answerStyle',
+    'segmentationText',
+    'compositionStyle',
+    'parts',
     'material',
     'materialAlign',
     'children',
@@ -187,18 +263,6 @@ export const PAPER_RECOGNITION_JSON_SCHEMA = {
       },
       required: ['school', 'title', 'subtitle', 'duration', 'fullScore', 'notices'],
     },
-    layout: {
-      type: 'object',
-      additionalProperties: false,
-      properties: {
-        answerStyle: {
-          type: 'string',
-          enum: ['blank', 'lines'],
-          description: '数学、物理通常为 blank，其他学科通常为 lines。',
-        },
-      },
-      required: ['answerStyle'],
-    },
     sections: {
       type: 'array',
       minItems: 1,
@@ -226,7 +290,7 @@ export const PAPER_RECOGNITION_JSON_SCHEMA = {
       },
     },
   },
-  required: ['name', 'info', 'layout', 'sections'],
+  required: ['name', 'info', 'sections'],
 } as const
 
 const RECOGNITION_INSTRUCTIONS = `你是严谨的试卷转录器。读取用户按顺序提供的试卷图片或 PDF，直接输出符合 JSON Schema 的完整 QuiXam 试卷结构。
@@ -239,11 +303,34 @@ const RECOGNITION_INSTRUCTIONS = `你是严谨的试卷转录器。读取用户�
 3. 材料中的居中标题行以“#”开头；古诗作者行以“@”开头。保留自然段和必要换行。
 4. 数学公式转为可由 KaTeX 渲染的 $...$；化学式可使用 $\\ce{...}$。不要把普通正文误包成公式。
 5. 只有原文件明确提供参考答案时才填写 answer，否则使用空字符串。
-6. 按卷面说明提取分值；材料题自身 score 为 0，分值写在 children。`
+6. 按语义选择题型：数学、物理的书写推导题用 calculation；历史、政治等整段作答题用 shortAnswer；生物、化学、地理及物理实验等由若干小问组成的题用 solution；写作用 composition；断句题必须用 segmentation，不能伪装成多选题。
+7. solution 必须把每个“（1）（2）……”拆进 parts。题干句中原有答题线时，在准确位置写 ______；只有原卷在该小问结束后另留横线时才设置 parts[].answerLines。两种答题位可以在同题混用，不得给每个小问机械追加横线。
+8. segmentation 的 stem 只放作答说明，待断句句子单独放 segmentationText，options 必须为空。
+9. 非选择题 options 为空；非 solution 题 parts 为空；非 segmentation 题 segmentationText 为空；非作文题 compositionStyle 统一填 lines。
+10. 按卷面说明提取分值；材料题自身 score 为 0，分值写在 children。`
 
-const QUESTION_TYPES: QuestionType[] = ['single', 'multiple', 'fill', 'essay', 'material']
-const LEAF_TYPES: LeafQuestionType[] = ['single', 'multiple', 'fill', 'essay']
-const ANSWER_STYLES: QuestionAnswerStyle[] = ['inherit', 'blank', 'lines']
+const QUESTION_TYPES: QuestionType[] = [
+  'single',
+  'multiple',
+  'fill',
+  'segmentation',
+  'calculation',
+  'shortAnswer',
+  'solution',
+  'composition',
+  'material',
+]
+const LEAF_TYPES: LeafQuestionType[] = [
+  'single',
+  'multiple',
+  'fill',
+  'segmentation',
+  'calculation',
+  'shortAnswer',
+  'solution',
+  'composition',
+]
+const COMPOSITION_STYLES: CompositionStyle[] = ['grid', 'lines']
 
 function record(value: unknown, path: string): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -284,9 +371,18 @@ function enumValue<T extends string>(value: unknown, values: readonly T[], path:
   return value as T
 }
 
-function parseLeafQuestion(value: unknown, path: string): RecognizedLeafQuestion {
+function parseSolutionPart(value: unknown, path: string): RecognizedSolutionPart {
   const item = record(value, path)
   return {
+    stem: string(item.stem, `${path}.stem`, 20_000),
+    score: number(item.score, `${path}.score`, 0, 200),
+    answerLines: number(item.answerLines, `${path}.answerLines`, 0, 60, true),
+  }
+}
+
+function parseLeafQuestion(value: unknown, path: string): RecognizedLeafQuestion {
+  const item = record(value, path)
+  const question: RecognizedLeafQuestion = {
     type: enumValue(item.type, LEAF_TYPES, `${path}.type`),
     stem: string(item.stem, `${path}.stem`, 20_000),
     score: number(item.score, `${path}.score`, 0, 200),
@@ -294,14 +390,26 @@ function parseLeafQuestion(value: unknown, path: string): RecognizedLeafQuestion
       string(option, `${path}.options[${index}]`, 5_000),
     ),
     answer: string(item.answer, `${path}.answer`, 20_000),
-    answerLines: number(item.answerLines, `${path}.answerLines`, 0, 60, true),
-    answerStyle: enumValue(item.answerStyle, ANSWER_STYLES, `${path}.answerStyle`),
+    answerLines: number(item.answerLines, `${path}.answerLines`, 0, 100, true),
+    segmentationText: string(item.segmentationText, `${path}.segmentationText`, 50_000),
+    compositionStyle: enumValue(
+      item.compositionStyle,
+      COMPOSITION_STYLES,
+      `${path}.compositionStyle`,
+    ),
+    parts: array(item.parts, `${path}.parts`, 30).map((part, index) =>
+      parseSolutionPart(part, `${path}.parts[${index}]`),
+    ),
   }
+  if (question.type === 'solution' && question.parts.length === 0) {
+    throw new Error(`${path}.parts：解答题至少需要一个小问`)
+  }
+  return question
 }
 
 function parseQuestion(value: unknown, path: string): RecognizedQuestion {
   const item = record(value, path)
-  return {
+  const question: RecognizedQuestion = {
     type: enumValue(item.type, QUESTION_TYPES, `${path}.type`),
     stem: string(item.stem, `${path}.stem`, 20_000),
     score: number(item.score, `${path}.score`, 0, 200),
@@ -309,21 +417,32 @@ function parseQuestion(value: unknown, path: string): RecognizedQuestion {
       string(option, `${path}.options[${index}]`, 5_000),
     ),
     answer: string(item.answer, `${path}.answer`, 20_000),
-    answerLines: number(item.answerLines, `${path}.answerLines`, 0, 60, true),
-    answerStyle: enumValue(item.answerStyle, ANSWER_STYLES, `${path}.answerStyle`),
+    answerLines: number(item.answerLines, `${path}.answerLines`, 0, 100, true),
+    segmentationText: string(item.segmentationText, `${path}.segmentationText`, 50_000),
+    compositionStyle: enumValue(
+      item.compositionStyle,
+      COMPOSITION_STYLES,
+      `${path}.compositionStyle`,
+    ),
+    parts: array(item.parts, `${path}.parts`, 30).map((part, index) =>
+      parseSolutionPart(part, `${path}.parts[${index}]`),
+    ),
     material: string(item.material, `${path}.material`, 200_000),
     materialAlign: enumValue(item.materialAlign, ['left', 'center'], `${path}.materialAlign`),
     children: array(item.children, `${path}.children`, 100).map((child, index) =>
       parseLeafQuestion(child, `${path}.children[${index}]`),
     ),
   }
+  if (question.type === 'solution' && question.parts.length === 0) {
+    throw new Error(`${path}.parts：解答题至少需要一个小问`)
+  }
+  return question
 }
 
 /** 对模型输出做本地边界校验，防止兼容接口忽略 strict schema。 */
 export function parseRecognizedPaper(value: unknown): RecognizedPaper {
   const paper = record(value, 'root')
   const info = record(paper.info, 'info')
-  const layout = record(paper.layout, 'layout')
   const sections = array(paper.sections, 'sections', 30)
   if (sections.length === 0) throw new Error('没有识别到任何大题')
 
@@ -338,9 +457,6 @@ export function parseRecognizedPaper(value: unknown): RecognizedPaper {
       notices: array(info.notices, 'info.notices', 30).map((notice, index) =>
         string(notice, `info.notices[${index}]`, 5_000),
       ),
-    },
-    layout: {
-      answerStyle: enumValue(layout.answerStyle, ['blank', 'lines'], 'layout.answerStyle'),
     },
     sections: sections.map((section, sectionIndex) => {
       const item = record(section, `sections[${sectionIndex}]`)
@@ -358,7 +474,7 @@ export function parseRecognizedPaper(value: unknown): RecognizedPaper {
 }
 
 function hydrateLeafQuestion(question: RecognizedLeafQuestion): Question {
-  return {
+  const base: Question = {
     id: uid(),
     type: question.type,
     stem: question.stem,
@@ -366,8 +482,22 @@ function hydrateLeafQuestion(question: RecognizedLeafQuestion): Question {
     options: [...question.options],
     answer: question.answer,
     answerLines: question.answerLines,
-    ...(question.answerStyle === 'inherit' ? {} : { answerStyle: question.answerStyle }),
   }
+  if (question.type === 'segmentation') {
+    return { ...base, options: [], answerLines: 0, segmentationText: question.segmentationText }
+  }
+  if (question.type === 'solution') {
+    return {
+      ...base,
+      options: [],
+      answerLines: 0,
+      parts: question.parts.map((part) => ({ ...part, id: uid() })),
+    }
+  }
+  if (question.type === 'composition') {
+    return { ...base, options: [], compositionStyle: question.compositionStyle }
+  }
+  return base
 }
 
 function hydrateQuestion(question: RecognizedQuestion): Question {
@@ -379,8 +509,7 @@ function hydrateQuestion(question: RecognizedQuestion): Question {
       score: 0,
       options: [],
       answer: question.answer,
-      answerLines: question.answerLines,
-      ...(question.answerStyle === 'inherit' ? {} : { answerStyle: question.answerStyle }),
+      answerLines: 0,
       material: question.material,
       materialAlign: question.materialAlign,
       children: question.children.map(hydrateLeafQuestion),
@@ -393,7 +522,9 @@ function hydrateQuestion(question: RecognizedQuestion): Question {
     options: question.options,
     answer: question.answer,
     answerLines: question.answerLines,
-    answerStyle: question.answerStyle,
+    segmentationText: question.segmentationText,
+    compositionStyle: question.compositionStyle,
+    parts: question.parts,
   })
 }
 
@@ -417,7 +548,7 @@ export function hydrateRecognizedPaper(draft: RecognizedPaper): Paper {
       fullScore: draft.info.fullScore,
       notices: [...draft.info.notices],
     },
-    layout: { ...DEFAULT_LAYOUT, answerStyle: draft.layout.answerStyle },
+    layout: { ...DEFAULT_LAYOUT },
     sections,
     createdAt: now,
     updatedAt: now,

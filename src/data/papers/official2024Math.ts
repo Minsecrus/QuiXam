@@ -160,21 +160,21 @@ export function official2024MathPaper(): Paper {
       ),
       questions: [
         question({
-          type: 'essay',
+          type: 'calculation',
           stem: '已知函数 $f(x)=\\ln x+x^2+ax+2$ 在点 $(2,f(2))$ 处的切线与直线 $2x+3y=0$ 垂直。\n（1）求 $a$；\n（2）求 $f(x)$ 的单调区间和极值。',
           score: 13,
           answer: '',
           answerLines: 0,
         }),
         question({
-          type: 'essay',
+          type: 'calculation',
           stem: '盒中有标记数字1，2，3，4的小球各2个，随机一次取出3个小球。\n（1）求取出的3个小球上的数字两两不同的概率；\n（2）记取出的3个小球上的最小数字为 $X$，求 $X$ 的分布列及数学期望 $E(X)$。',
           score: 15,
           answer: '',
           answerLines: 0,
         }),
         question({
-          type: 'essay',
+          type: 'calculation',
           stem: '如图，平行六面体 $ABCD-A_1B_1C_1D_1$ 中，底面 $ABCD$ 是边长为2的正方形，$O$ 为 $AC$ 与 $BD$ 的交点，$AA_1=2$，$\\angle C_1CB=\\angle C_1CD$，$\\angle C_1CO=45^\\circ$。\n（1）证明：$C_1O\\perp$ 平面 $ABCD$；\n（2）求二面角 $B-AA_1-D$ 的正弦值。',
           score: 15,
           answer: '',
@@ -188,14 +188,14 @@ export function official2024MathPaper(): Paper {
           ],
         }),
         question({
-          type: 'essay',
+          type: 'calculation',
           stem: '已知抛物线 $C:y^2=4x$ 的焦点为 $F$，过 $F$ 的直线 $l$ 交 $C$ 于 $A$，$B$ 两点，过 $F$ 与 $l$ 垂直的直线交 $C$ 于 $D$，$E$ 两点，其中 $B$，$D$ 在 $x$ 轴上方，$M$，$N$ 分别为 $AB$，$DE$ 的中点。\n（1）证明：直线 $MN$ 过定点；\n（2）设 $G$ 为直线 $AE$ 与直线 $BD$ 的交点，求 $\\triangle GMN$ 面积的最小值。',
           score: 17,
           answer: '',
           answerLines: 0,
         }),
         question({
-          type: 'essay',
+          type: 'calculation',
           stem: '离散对数在密码学中有重要的应用。设 $p$ 是素数，集合 $X=\\{1,2,\\cdots,p-1\\}$，若 $u,v\\in X$，$m\\in\\mathbb N$，记 $u\\otimes v$ 为 $uv$ 除以 $p$ 的余数，$u^{m,\\otimes}$ 为 $u^m$ 除以 $p$ 的余数；设 $a\\in X$，$1,a,a^{2,\\otimes},\\cdots,a^{p-2,\\otimes}$ 两两不同，若 $a^{n,\\otimes}=b\\ (n\\in\\{0,1,\\cdots,p-2\\})$，则称 $n$ 是以 $a$ 为底 $b$ 的离散对数，记为 $n=\\log(p)_a b$。\n（1）若 $p=11$，$a=2$，求 $a^{p-1,\\otimes}$；\n（2）对 $m_1,m_2\\in\\{0,1,\\cdots,p-2\\}$，记 $m_1\\oplus m_2$ 为 $m_1+m_2$ 除以 $p-1$ 的余数（当 $m_1+m_2$ 能被 $p-1$ 整除时，$m_1\\oplus m_2=0$）。证明：$\\log(p)_a(b\\otimes c)=\\log(p)_a b\\oplus\\log(p)_a c$，其中 $b,c\\in X$；\n（3）已知 $n=\\log(p)_a b$。对 $x\\in X$，$k\\in\\{1,2,\\cdots,p-2\\}$，令 $y_1=a^{k,\\otimes}$，$y_2=x\\otimes b^{k,\\otimes}$。证明：$x=y_2\\otimes y_1^{n(p-2),\\otimes}$。',
           score: 17,
           answer: '',

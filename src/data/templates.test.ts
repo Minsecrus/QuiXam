@@ -85,10 +85,11 @@ describe('paper templates', () => {
     )
       return
 
-    expect(physics.layout.answerStyle).toBe('blank')
+    expect(allQuestions(physics).filter((item) => item.type === 'solution')).toHaveLength(2)
+    expect(allQuestions(physics).filter((item) => item.type === 'calculation')).toHaveLength(3)
     expect(allQuestions(physics).flatMap((item) => item.images ?? []).length).toBeGreaterThanOrEqual(6)
 
-    expect(history.layout.answerStyle).toBe('lines')
+    expect(allQuestions(history).filter((item) => item.type === 'shortAnswer')).toHaveLength(3)
     expect(
       history.sections
         .flatMap((section) => section.questions)
@@ -105,8 +106,10 @@ describe('paper templates', () => {
       .flatMap((item) => [item.stem, ...item.options, item.answer])
       .join('\n')
     expect(chemistryText.match(/\\ce\{/g)?.length ?? 0).toBeGreaterThanOrEqual(30)
+    expect(allQuestions(chemistry).filter((item) => item.type === 'solution')).toHaveLength(4)
 
     expect(allQuestions(biology).filter((item) => item.type === 'multiple')).toHaveLength(4)
+    expect(allQuestions(biology).filter((item) => item.type === 'solution')).toHaveLength(5)
     expect(allQuestions(biology).flatMap((item) => item.images ?? []).length).toBeGreaterThanOrEqual(
       7,
     )
@@ -115,6 +118,7 @@ describe('paper templates', () => {
       .flatMap((section) => section.questions)
       .filter((item) => item.type === 'material')
     expect(politicsMaterials).toHaveLength(5)
+    expect(allQuestions(politics).filter((item) => item.type === 'shortAnswer')).toHaveLength(5)
     expect(politicsMaterials.map((item) => item.material ?? '').join('\n').length).toBeGreaterThan(
       1200,
     )
@@ -127,10 +131,12 @@ describe('paper templates', () => {
     expect(
       allQuestions(geography).flatMap((item) => item.images ?? []).length,
     ).toBeGreaterThanOrEqual(8)
+    expect(allQuestions(geography).filter((item) => item.type === 'solution')).toHaveLength(3)
 
     expect(technology.info.duration).toBe(90)
     expect(technology.info.subtitle).toMatch(/信息技术.*通用技术/)
     expect(technology.sections.map((section) => sectionScore(section))).toEqual([24, 26, 24, 26])
+    expect(allQuestions(technology).filter((item) => item.type === 'solution')).toHaveLength(6)
     expect(
       allQuestions(technology).flatMap((item) => item.images ?? []).length,
     ).toBeGreaterThanOrEqual(10)
@@ -148,5 +154,26 @@ describe('paper templates', () => {
         expect(image.assetId).toMatch(/^static:\/papers\/simulated\/.+\.svg$/)
       }
     }
+  })
+
+  it('主观题模板全部使用新语义结构', () => {
+    for (const template of paperTemplates.filter((item) => item.id !== 'blank')) {
+      const paper = template.create()
+      expect(allQuestions(paper).some((item) => (item.type as string) === 'essay')).toBe(false)
+      for (const item of allQuestions(paper)) {
+        if (item.type !== 'solution') continue
+        expect(item.answerLines).toBe(0)
+        expect(item.parts?.length ?? 0).toBeGreaterThan(0)
+      }
+    }
+
+    const chinese = paperTemplates.find((item) => item.id === 'gaokao-chinese')?.create()
+    const english = paperTemplates.find((item) => item.id === 'gaokao-english')?.create()
+    expect(allQuestions(chinese!).filter((item) => item.type === 'segmentation')).toHaveLength(1)
+    expect(
+      allQuestions(english!)
+        .filter((item) => item.type === 'composition')
+        .every((item) => item.compositionStyle === 'lines'),
+    ).toBe(true)
   })
 })

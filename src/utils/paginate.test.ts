@@ -252,14 +252,14 @@ describe('paginate — 两端对齐（自然撑满整页）', () => {
     expect(tight?.gapBefore ?? 0).toBeGreaterThan(0)
   })
 
-  it('间隙全部吃满后余量转给行距', () => {
+  it('间隙全部吃满后余量留在页底，不拉正文行距', () => {
     const groups = [
       { ...group('a', 10), pieces: [piece('a', 10, { gapWeight: GAP_WEIGHT.question, lineHeight: 1 })] },
       { ...group('b', 10), pieces: [piece('b', 10, { gapWeight: GAP_WEIGHT.question, lineHeight: 1 })] },
       { ...group('c', 95), pieces: [piece('c', 95, { gapWeight: GAP_WEIGHT.question })] },
     ]
     const pages = paginate(groups, { ...justified, baseLineHeight: 1 })
-    expect(pages[0].columnLineStretch?.[0] ?? 0).toBeGreaterThan(0)
+    expect(pages[0].columnLineStretch).toBeUndefined()
   })
 
   it('关闭后完全不拉伸', () => {

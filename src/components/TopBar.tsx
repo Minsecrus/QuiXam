@@ -2,14 +2,13 @@ import { useRef, useState } from 'react'
 import {
   ChevronDown,
   ClipboardPaste,
-  FileDown,
-  FileUp,
+  Download,
   Plus,
   Printer,
   Redo2,
   ScanText,
-  Trash2,
   Undo2,
+  Upload,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react'
@@ -17,6 +16,8 @@ import { usePaperStore } from '../store/paperStore'
 import { paperTemplates } from '../data/templates'
 import { formatTime, paperScore } from '../utils/format'
 import { exportPaperJson } from '../utils/transfer'
+import { InfoDialog } from './InfoDialog'
+import { PaperPicker } from './PaperPicker'
 import { SmartImportDialog } from './SmartImportDialog'
 import { ScanImportDialog } from './ScanImportDialog'
 
@@ -39,11 +40,11 @@ export function TopBar() {
   const toggleAnswers = usePaperStore((s) => s.toggleAnswers)
 
   const totalScore = paper ? paperScore(paper) : 0
-  // 只在超分时报警：卷子编到一半分数当然不足，那不是错误
-  const scoreOver = paper ? totalScore > paper.info.fullScore : false
+  const scoreMismatch = paper ? Math.abs(totalScore - paper.info.fullScore) > 1e-9 : false
   const recentFirst = [...paperList].sort((a, b) => b.updatedAt - a.updatedAt)
 
   const [menuOpen, setMenuOpen] = useState(false)
+  const [infoOpen, setInfoOpen] = useState(false)
   const [pasteOpen, setPasteOpen] = useState(false)
   const [scanOpen, setScanOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -69,18 +70,28 @@ export function TopBar() {
     }
   }
 
-  const handleDeleteCurrent = () => {
-    if (!paper) return
-    if (window.confirm(`删除试卷「${paper.name}」？此操作不可恢复。`)) {
-      void deletePaper(paper.id)
-    }
-  }
-
   return (
     <header className="topbar">
       <div className="topbar__brand">
-        <div className="brand-mark">QX</div>
-        <span className="brand-name">QuiXam</span>
+        <div className="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" focusable="false">
+            <ellipse className="brand-mark__q" cx="12.8" cy="13.1" rx="5.8" ry="7.2" />
+            <path className="brand-mark__q-tail" d="m16.8 18.6 8.7 7.2" />
+            <path
+              className="brand-mark__x-stroke"
+              d="M27.2 14.3c-2.3 1.8-4.2 3.4-5.5 5.4-1.4 2.1-1.3 3.8-2.2 5.5-.7 1.4-1.1 3.1-1.3 5"
+            />
+          </svg>
+        </div>
+        <button
+          type="button"
+          className="brand-name"
+          title="关于 QuiXam"
+          aria-haspopup="dialog"
+          onClick={() => setInfoOpen(true)}
+        >
+          Qui<span className="brand-name__accent">Xam</span>
+        </button>
       </div>
 
       <div className="topbar__center">
@@ -91,21 +102,7 @@ export function TopBar() {
           <Redo2 size={16} />
         </button>
 
-        <select
-          className="paper-select"
-          value={paper?.id ?? ''}
-          onChange={(e) => void openPaper(e.target.value)}
-          title="切换试卷"
-        >
-          {recentFirst.map((meta) => (
-            <option key={meta.id} value={meta.id}>
-              {meta.name}
-            </option>
-          ))}
-        </select>
-        <button type="button" className="icon-button" title="删除当前试卷" onClick={handleDeleteCurrent}>
-          <Trash2 size={16} />
-        </button>
+        <PaperPicker papers={recentFirst} value={paper?.id ?? null} onChange={openPaper} onDelete={deletePaper} />
         <span className="save-indicator" role="status">
           {saveState === 'saving' ? '保存中…' : lastSavedAt ? `已保存 ${formatTime(lastSavedAt)}` : ''}
         </span>
@@ -139,8 +136,10 @@ export function TopBar() {
         <span className="topbar__divider" />
 
         {paper ? (
-          <span className={`score-indicator ${scoreOver ? 'score-warn' : ''}`} title="卷面分 / 满分">
-            {totalScore} / {paper.info.fullScore} 分
+          <span className="score-indicator" title="实际分数 / 满分">
+            <span className={scoreMismatch ? 'score-warn' : undefined}>{totalScore}</span>
+            {' / '}
+            {paper.info.fullScore} 分
           </span>
         ) : null}
 
@@ -189,7 +188,7 @@ export function TopBar() {
         </button>
 
         <button type="button" className="icon-button" title="导入 JSON" onClick={() => fileInputRef.current?.click()}>
-          <FileUp size={16} />
+          <Upload size={16} />
         </button>
         <input
           ref={fileInputRef}
@@ -203,7 +202,7 @@ export function TopBar() {
         />
 
         <button type="button" className="icon-button" title="导出 JSON" onClick={() => void handleExportJson()}>
-          <FileDown size={16} />
+          <Download size={16} />
         </button>
 
         <button type="button" className="primary-button" onClick={() => window.print()}>
@@ -214,6 +213,7 @@ export function TopBar() {
 
       {pasteOpen ? <SmartImportDialog onClose={() => setPasteOpen(false)} /> : null}
       {scanOpen ? <ScanImportDialog onClose={() => setScanOpen(false)} /> : null}
+      {infoOpen ? <InfoDialog onClose={() => setInfoOpen(false)} /> : null}
     </header>
   )
 }

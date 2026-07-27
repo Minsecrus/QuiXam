@@ -41,9 +41,18 @@ describe('parseExamText', () => {
     expect(sections[0].questions[0].type).toBe('fill')
   })
 
-  it('无选项无下划线的题识别为解答题', () => {
+  it('无选项无下划线的题默认识别为简答题', () => {
     const { sections } = parseExamText('一、解答题\n17. 求证：根号 2 是无理数。')
-    expect(sections[0].questions[0].type).toBe('essay')
+    expect(sections[0].questions[0].type).toBe('shortAnswer')
+  })
+
+  it('带明确小问结构的题识别为解答题并拆出小问', () => {
+    const { sections } = parseExamText(
+      '一、解答题\n17. 阅读材料。\n（1）填写______。\n（2）说明理由。',
+    )
+    const question = sections[0].questions[0]
+    expect(question.type).toBe('solution')
+    expect(question.parts?.map((part) => part.stem)).toEqual(['（1）填写______。', '（2）说明理由。'])
   })
 
   it('题干多行合并，换行保留', () => {

@@ -11,9 +11,10 @@ import {
   QUESTION_TYPE_LABELS,
 } from '../utils/format'
 import { createQuestion } from '../data/templates'
+import { splitSegmentationText, splitSolutionText } from '../data/paperFactory'
 import { AssetImage } from './AssetImage'
+import { uid } from '../utils/id'
 import type {
-  AnswerAreaStyle,
   FontPreset,
   FontSizeLevel,
   LineHeightLevel,
@@ -240,16 +241,6 @@ function PaperInspector() {
               </select>
             </label>
           </div>
-          <label className="field">
-            <span>答题区</span>
-            <select
-              value={paper.layout.answerStyle}
-              onChange={(e) => updateLayout({ answerStyle: e.target.value as AnswerAreaStyle })}
-            >
-              <option value="blank">空白（数学 / 物理）</option>
-              <option value="lines">横线（其他科目）</option>
-            </select>
-          </label>
           <label className="field field--inline">
             <input
               type="checkbox"
@@ -470,15 +461,36 @@ function QuestionInspector({
   const handleTypeChange = (type: QuestionType) => {
     if (type === 'material') return
     const defaults = createQuestion(type)
+    const carriedStem =
+      question.type === 'solution'
+        ? [question.stem, ...(question.parts ?? []).map((part) => part.stem)].filter(Boolean).join('\n')
+        : question.type === 'segmentation'
+          ? [question.stem, question.segmentationText].filter(Boolean).join('\n')
+          : question.stem
+    const structuredSolution =
+      type === 'solution' ? splitSolutionText(carriedStem, question.answerLines) : null
+    const structuredSegmentation =
+      type === 'segmentation' ? splitSegmentationText(carriedStem) : null
+    const usesQuestionAnswerLines =
+      type === 'calculation' || type === 'shortAnswer' || type === 'composition'
+
     updateQuestion(question.id, {
       type,
+      stem:
+        structuredSolution?.stem ??
+        structuredSegmentation?.stem ??
+        carriedStem,
       options:
         type === 'single' || type === 'multiple'
           ? question.options.length >= 2
             ? question.options
             : defaults.options
           : [],
-      answerLines: type === 'essay' ? question.answerLines || defaults.answerLines : 0,
+      answerLines: usesQuestionAnswerLines ? question.answerLines || defaults.answerLines : 0,
+      segmentationText: structuredSegmentation?.segmentationText,
+      parts: structuredSolution?.parts,
+      compositionStyle:
+        type === 'composition' ? question.compositionStyle ?? defaults.compositionStyle : undefined,
     })
   }
 
@@ -529,13 +541,125 @@ function QuestionInspector({
         </div>
 
         <label className="field">
-          <span>题干（$…$ 公式 · 化学式用 \ce{'{…}'}）</span>
+          <span>
+            {question.type === 'solution'
+              ? '引导语（可留空）'
+              : question.type === 'segmentation'
+                ? '作答说明'
+                : '题干（$…$ 公式 · 化学式用 \\ce{…}）'}
+          </span>
           <textarea
-            rows={5}
+            rows={question.type === 'solution' || question.type === 'segmentation' ? 3 : 5}
             value={question.stem}
             onChange={(e) => updateQuestion(question.id, { stem: e.target.value })}
           />
         </label>
+
+        {question.type === 'segmentation' ? (
+          <label className="field">
+            <span>待断句文本（自动缩进并拉开字距）</span>
+            <textarea
+              rows={4}
+              value={question.segmentationText ?? ''}
+              onChange={(e) => updateQuestion(question.id, { segmentationText: e.target.value })}
+            />
+          </label>
+        ) : null}
+
+        {question.type === 'solution' ? (
+          <div className="field">
+            <span>小问（`______` 表示句中答题横线）</span>
+            <div className="solution-part-editor">
+              {(question.parts ?? []).map((part, index) => (
+                <div key={part.id} className="solution-part-editor__item">
+                  <div className="solution-part-editor__head">
+                    <span>小问 {index + 1}</span>
+                    <button
+                      type="button"
+                      className="icon-button is-danger"
+                      title="删除小问"
+                      onClick={() =>
+                        updateQuestion(question.id, {
+                          parts: (question.parts ?? []).filter((item) => item.id !== part.id),
+                        })
+                      }
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <textarea
+                    rows={4}
+                    value={part.stem}
+                    onChange={(e) =>
+                      updateQuestion(question.id, {
+                        parts: (question.parts ?? []).map((item) =>
+                          item.id === part.id ? { ...item, stem: e.target.value } : item,
+                        ),
+                      })
+                    }
+                  />
+                  <div className="field-row">
+                    <label className="field">
+                      <span>小问分值</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={part.score}
+                        onChange={(e) =>
+                          updateQuestion(question.id, {
+                            parts: (question.parts ?? []).map((item) =>
+                              item.id === part.id
+                                ? { ...item, score: Number(e.target.value) || 0 }
+                                : item,
+                            ),
+                          })
+                        }
+                      />
+                    </label>
+                    <label className="field">
+                      <span>问后横线</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={40}
+                        value={part.answerLines}
+                        onChange={(e) =>
+                          updateQuestion(question.id, {
+                            parts: (question.parts ?? []).map((item) =>
+                              item.id === part.id
+                                ? { ...item, answerLines: Number(e.target.value) || 0 }
+                                : item,
+                            ),
+                          })
+                        }
+                      />
+                    </label>
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="mini-button"
+                onClick={() =>
+                  updateQuestion(question.id, {
+                    parts: [
+                      ...(question.parts ?? []),
+                      {
+                        id: uid(),
+                        stem: `（${(question.parts?.length ?? 0) + 1}）`,
+                        score: 0,
+                        answerLines: 0,
+                      },
+                    ],
+                  })
+                }
+              >
+                <Plus size={13} />
+                小问
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         <ImagesEditor question={question} />
 
@@ -575,14 +699,27 @@ function QuestionInspector({
           </div>
         ) : null}
 
-        {question.type === 'essay' ? (
+        {question.type === 'calculation' || question.type === 'shortAnswer' ? (
+          <label className="field">
+            <span>{question.type === 'calculation' ? '题后留白行数' : '题后横线行数'}</span>
+            <input
+              type="number"
+              min={0}
+              max={40}
+              value={question.answerLines}
+              onChange={(e) => updateQuestion(question.id, { answerLines: Number(e.target.value) || 0 })}
+            />
+          </label>
+        ) : null}
+
+        {question.type === 'composition' ? (
           <div className="field-row">
             <label className="field">
               <span>答题区行数</span>
               <input
                 type="number"
                 min={0}
-                max={40}
+                max={100}
                 value={question.answerLines}
                 onChange={(e) => updateQuestion(question.id, { answerLines: Number(e.target.value) || 0 })}
               />
@@ -590,16 +727,15 @@ function QuestionInspector({
             <label className="field">
               <span>答题区样式</span>
               <select
-                value={question.answerStyle ?? ''}
+                value={question.compositionStyle ?? 'grid'}
                 onChange={(e) =>
                   updateQuestion(question.id, {
-                    answerStyle: e.target.value ? (e.target.value as AnswerAreaStyle) : undefined,
+                    compositionStyle: e.target.value as 'grid' | 'lines',
                   })
                 }
               >
-                <option value="">跟随试卷</option>
-                <option value="blank">空白</option>
                 <option value="lines">横线</option>
+                <option value="grid">方格</option>
               </select>
             </label>
           </div>
