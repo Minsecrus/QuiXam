@@ -24,4 +24,15 @@ describe('MathText', () => {
     expect(html).toContain('class="inline-answer-blank"')
     expect(html).not.toContain('______')
   })
+
+  it('渲染轻量富文本和独立公式', () => {
+    const html = renderToStaticMarkup(<MathText text="**重点** __下划线__ ==着重== ^2^ ~x~ $$x^2$$" />)
+
+    expect(html).toContain('class="rich-bold"')
+    expect(html).toContain('class="rich-underline"')
+    expect(html).toContain('class="rich-emphasis"')
+    expect(html).toContain('class="rich-sup"')
+    expect(html).toContain('class="rich-sub"')
+    expect(html).toContain('class="math-display"')
+  })
 })

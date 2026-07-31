@@ -1,25 +1,34 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
+  Archive,
   ChevronDown,
   ClipboardPaste,
   Download,
+  Files,
+  History,
   Plus,
   Printer,
   Redo2,
   ScanText,
   Undo2,
   Upload,
+  X,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react'
 import { usePaperStore } from '../store/paperStore'
 import { paperTemplates } from '../data/templates'
+import { deleteCustomTemplate, getCustomTemplates } from '../db'
 import { formatTime, paperScore } from '../utils/format'
 import { exportPaperJson } from '../utils/transfer'
 import { InfoDialog } from './InfoDialog'
 import { PaperPicker } from './PaperPicker'
 import { SmartImportDialog } from './SmartImportDialog'
 import { ScanImportDialog } from './ScanImportDialog'
+import { PrintPreflightDialog } from './PrintPreflightDialog'
+import { HistoryDialog } from './HistoryDialog'
+import { QuestionBankDialog } from './QuestionBankDialog'
+import type { CustomPaperTemplate } from '../types'
 
 export function TopBar() {
   const paper = usePaperStore((s) => s.paper)
@@ -38,6 +47,11 @@ export function TopBar() {
   const setZoom = usePaperStore((s) => s.setZoom)
   const showAnswers = usePaperStore((s) => s.showAnswers)
   const toggleAnswers = usePaperStore((s) => s.toggleAnswers)
+  const showAnswerSheet = usePaperStore((s) => s.showAnswerSheet)
+  const toggleAnswerSheet = usePaperStore((s) => s.toggleAnswerSheet)
+  const duplicatePaper = usePaperStore((s) => s.duplicatePaper)
+  const createPaperFromCustomTemplate = usePaperStore((s) => s.createPaperFromCustomTemplate)
+  const saveCurrentAsTemplate = usePaperStore((s) => s.saveCurrentAsTemplate)
 
   const totalScore = paper ? paperScore(paper) : 0
   const scoreMismatch = paper ? Math.abs(totalScore - paper.info.fullScore) > 1e-9 : false
@@ -47,7 +61,25 @@ export function TopBar() {
   const [infoOpen, setInfoOpen] = useState(false)
   const [pasteOpen, setPasteOpen] = useState(false)
   const [scanOpen, setScanOpen] = useState(false)
+  const [preflightOpen, setPreflightOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [bankOpen, setBankOpen] = useState(false)
+  const [customTemplates, setCustomTemplates] = useState<CustomPaperTemplate[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const refreshCustomTemplates = async () => {
+    setCustomTemplates(await getCustomTemplates())
+  }
+
+  useEffect(() => {
+    let alive = true
+    void getCustomTemplates().then((templates) => {
+      if (alive) setCustomTemplates(templates)
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
 
   const handleExportJson = async () => {
     if (!paper) return
@@ -68,6 +100,20 @@ export function TopBar() {
     if (error) {
       window.alert(`导入失败：${error}`)
     }
+  }
+
+  const handleSaveAsTemplate = async () => {
+    const fallback = paper?.name || '我的模板'
+    const name = window.prompt('模板名称', fallback)
+    if (!name?.trim()) return
+    const saved = await saveCurrentAsTemplate(name)
+    if (saved) await refreshCustomTemplates()
+  }
+
+  const handleDeleteTemplate = async (template: CustomPaperTemplate) => {
+    if (!window.confirm(`删除本地模板“${template.name}”？不会影响已创建的试卷。`)) return
+    await deleteCustomTemplate(template.id)
+    await refreshCustomTemplates()
   }
 
   return (
@@ -147,6 +193,10 @@ export function TopBar() {
           <input type="checkbox" checked={showAnswers} onChange={toggleAnswers} />
           <span>答案</span>
         </label>
+        <label className="switch-label" title="打印时附独立答题卡">
+          <input type="checkbox" checked={showAnswerSheet} onChange={toggleAnswerSheet} />
+          <span>答题卡</span>
+        </label>
       </div>
 
       <div className="topbar__actions">
@@ -160,6 +210,17 @@ export function TopBar() {
             <>
               <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />
               <div className="menu-panel">
+                <button
+                  type="button"
+                  className="menu-item menu-item--action"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    void handleSaveAsTemplate()
+                  }}
+                >
+                  <span>保存当前卷为本地模板</span>
+                  <small>可在此菜单中复用，不会上传</small>
+                </button>
                 {paperTemplates.map((template) => (
                   <button
                     key={template.id}
@@ -174,10 +235,51 @@ export function TopBar() {
                     <small>{template.description}</small>
                   </button>
                 ))}
+                {customTemplates.length > 0 ? (
+                  <div className="menu-template-group">
+                    <small>我的本地模板</small>
+                    {customTemplates.map((template) => (
+                      <div className="menu-template-row" key={template.id}>
+                        <button
+                          type="button"
+                          className="menu-item"
+                          onClick={() => {
+                            setMenuOpen(false)
+                            void createPaperFromCustomTemplate(template)
+                          }}
+                        >
+                          <span>{template.name}</span>
+                          <small>从当前浏览器保存的试卷结构创建</small>
+                        </button>
+                        <button
+                          type="button"
+                          className="icon-button is-danger"
+                          title={`删除模板“${template.name}”`}
+                          aria-label={`删除模板“${template.name}”`}
+                          onClick={() => void handleDeleteTemplate(template)}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </>
           ) : null}
         </div>
+
+        <button type="button" className="icon-button" title="复制当前试卷" aria-label="复制当前试卷" onClick={() => void duplicatePaper()}>
+          <Files size={16} />
+        </button>
+
+        <button type="button" className="icon-button" title="本地版本历史" aria-label="本地版本历史" onClick={() => setHistoryOpen(true)}>
+          <History size={16} />
+        </button>
+
+        <button type="button" className="icon-button" title="本地题库" aria-label="本地题库" onClick={() => setBankOpen(true)}>
+          <Archive size={16} />
+        </button>
 
         <button type="button" className="icon-button" title="粘贴导入（Word 文本）" onClick={() => setPasteOpen(true)}>
           <ClipboardPaste size={16} />
@@ -205,7 +307,7 @@ export function TopBar() {
           <Download size={16} />
         </button>
 
-        <button type="button" className="primary-button" onClick={() => window.print()}>
+        <button type="button" className="primary-button" onClick={() => setPreflightOpen(true)}>
           <Printer size={15} />
           打印
         </button>
@@ -214,6 +316,9 @@ export function TopBar() {
       {pasteOpen ? <SmartImportDialog onClose={() => setPasteOpen(false)} /> : null}
       {scanOpen ? <ScanImportDialog onClose={() => setScanOpen(false)} /> : null}
       {infoOpen ? <InfoDialog onClose={() => setInfoOpen(false)} /> : null}
+      {preflightOpen && paper ? <PrintPreflightDialog paper={paper} includeAnswers={showAnswers} onClose={() => setPreflightOpen(false)} /> : null}
+      {historyOpen && paper ? <HistoryDialog paper={paper} onClose={() => setHistoryOpen(false)} /> : null}
+      {bankOpen ? <QuestionBankDialog onClose={() => setBankOpen(false)} /> : null}
     </header>
   )
 }

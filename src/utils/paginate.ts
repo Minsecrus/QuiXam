@@ -73,7 +73,7 @@ export interface PlacedSlice {
 
 export interface PlannedPage {
   /** 通栏页眉：首页卷头，或答案页标题 */
-  banner: 'paper-head' | 'answer-head' | null
+  banner: 'paper-head' | 'answer-head' | 'answer-sheet-head' | null
   /** 每栏的片列表，长度恒等于 columnCount */
   columns: PlacedSlice[][]
   /** 本页每栏的可用高度（px）；首页扣掉了页眉 */

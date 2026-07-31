@@ -12,6 +12,21 @@ export type QuestionType = LeafQuestionType | 'material'
 
 export type CompositionStyle = 'grid' | 'lines'
 
+/** 题库筛选和智能组卷使用的难度档位；unknown 表示尚未标注。 */
+export type QuestionDifficulty = 'unknown' | 'easy' | 'medium' | 'hard'
+
+/**
+ * 题目可选元数据。它随题目走，既可以留在一张试卷中，也可以被保存进本地题库。
+ * 不把这些字段设为必填，保证旧 JSON 和扫描导入仍可直接打开。
+ */
+export interface QuestionMetadata {
+  knowledgePoints: string[]
+  tags: string[]
+  difficulty: QuestionDifficulty
+  source: string
+  year?: number
+}
+
 export interface SolutionPart {
   id: string
   /** 小问题干；需要在句中作答的位置直接写 `______` */
@@ -28,6 +43,8 @@ export interface QuestionImage {
   /** 相对正文宽度的百分比（10–100） */
   widthPercent: number
   align: 'center' | 'right'
+  /** 图片说明，打印时显示在题图下方。 */
+  caption?: string
 }
 
 export interface Question {
@@ -64,6 +81,10 @@ export interface Question {
   children?: Question[]
   /** 附图（几何图、图表等），渲染在题干之后 */
   images?: QuestionImage[]
+  /** 题库检索、难度配比与来源追溯使用的可选字段。 */
+  metadata?: QuestionMetadata
+  /** 保存进本地题库后关联的条目 id；不影响题目独立编辑。 */
+  bankEntryId?: string
 }
 
 export interface Section {
@@ -143,4 +164,32 @@ export interface PaperMeta {
   id: string
   name: string
   updatedAt: number
+}
+
+/** 本地题库的一条独立记录。题目本体保留为快照，添加回试卷时会分配新 id。 */
+export interface QuestionBankEntry {
+  id: string
+  question: Question
+  createdAt: number
+  updatedAt: number
+  usageCount: number
+}
+
+/** 浏览器本地的可恢复版本；不会上传或同步到任何服务器。 */
+export interface PaperSnapshot {
+  id: string
+  paperId: string
+  paperName: string
+  label: string
+  createdAt: number
+  paper: Paper
+}
+
+/** 用户把当前试卷保存为可复用结构后得到的本地模板。 */
+export interface CustomPaperTemplate {
+  id: string
+  name: string
+  createdAt: number
+  updatedAt: number
+  paper: Paper
 }

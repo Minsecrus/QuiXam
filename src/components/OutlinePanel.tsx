@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { ChevronDown, ChevronRight, Plus } from 'lucide-react'
+import { useState, type DragEvent } from 'react'
+import { ChevronDown, ChevronRight, ListChecks, Plus, Trash2 } from 'lucide-react'
 import { usePaperStore } from '../store/paperStore'
 import {
   cnNumber,
@@ -33,21 +33,42 @@ function QuestionOutlineItem({
   question,
   number,
   nested = false,
+  bulkMode = false,
+  bulkSelected = false,
+  onToggleBulk,
 }: {
   question: Question
   number: number
   nested?: boolean
+  bulkMode?: boolean
+  bulkSelected?: boolean
+  onToggleBulk?: (id: string) => void
 }) {
   const selection = usePaperStore((s) => s.selection)
   const setSelection = usePaperStore((s) => s.setSelection)
+  const reorderQuestion = usePaperStore((s) => s.reorderQuestion)
+  const onQuestionDragStart = (event: DragEvent<HTMLButtonElement>) => {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('application/x-quixam-question', question.id)
+  }
+  const onQuestionDrop = (event: DragEvent<HTMLButtonElement>) => {
+    const sourceId = event.dataTransfer.getData('application/x-quixam-question')
+    if (!sourceId) return
+    event.preventDefault()
+    reorderQuestion(sourceId, question.id)
+  }
   return (
     <button
       type="button"
-      className={`outline-question ${nested ? 'is-nested' : ''} ${
+      className={`outline-question ${nested ? 'is-nested' : ''} ${bulkSelected ? 'is-bulk-selected' : ''} ${
         selection.kind === 'question' && selection.id === question.id ? 'is-active' : ''
       }`}
-      onClick={() => setSelection({ kind: 'question', id: question.id })}
+      onClick={() => bulkMode ? onToggleBulk?.(question.id) : setSelection({ kind: 'question', id: question.id })}
       title={questionSummary(question)}
+      draggable
+      onDragStart={onQuestionDragStart}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={onQuestionDrop}
     >
       <span className="outline-question__number">{number}．</span>
       <span className="outline-question__content">
@@ -64,7 +85,14 @@ export function OutlinePanel() {
   const setSelection = usePaperStore((s) => s.setSelection)
   const addSection = usePaperStore((s) => s.addSection)
   const addQuestion = usePaperStore((s) => s.addQuestion)
+  const reorderSection = usePaperStore((s) => s.reorderSection)
+  const reorderQuestion = usePaperStore((s) => s.reorderQuestion)
+  const updateQuestionScores = usePaperStore((s) => s.updateQuestionScores)
+  const removeQuestions = usePaperStore((s) => s.removeQuestions)
   const [expandedSections, setExpandedSections] = useState<Set<string>>(() => new Set())
+  const [bulkMode, setBulkMode] = useState(false)
+  const [bulkIds, setBulkIds] = useState<Set<string>>(() => new Set())
+  const [bulkScore, setBulkScore] = useState('5')
 
   if (!paper) return null
 
@@ -82,14 +110,39 @@ export function OutlinePanel() {
     setSelection({ kind: 'section', id: sectionId })
   }
 
+  const toggleBulkQuestion = (id: string) => {
+    setBulkIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const exitBulkMode = () => {
+    setBulkMode(false)
+    setBulkIds(new Set())
+  }
+
   return (
     <aside className="sidebar sidebar--left">
       <section className="panel">
         <div className="panel__header">
           <h2>结构</h2>
-          <button type="button" className="icon-button" title="新增大题" onClick={addSection}>
-            <Plus size={15} />
-          </button>
+          <div className="button-row">
+            <button
+              type="button"
+              className={`icon-button${bulkMode ? ' is-active' : ''}`}
+              title="批量编辑题目"
+              aria-label="批量编辑题目"
+              onClick={() => bulkMode ? exitBulkMode() : setBulkMode(true)}
+            >
+              <ListChecks size={15} />
+            </button>
+            <button type="button" className="icon-button" title="新增大题" onClick={addSection}>
+              <Plus size={15} />
+            </button>
+          </div>
         </div>
 
         <div className="outline-list">
@@ -117,6 +170,18 @@ export function OutlinePanel() {
                   aria-expanded={expanded}
                   aria-controls={listId}
                   onClick={() => toggleSection(section.id, expanded)}
+                  draggable
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed = 'move'
+                    event.dataTransfer.setData('application/x-quixam-section', section.id)
+                  }}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    const sourceId = event.dataTransfer.getData('application/x-quixam-section')
+                    if (!sourceId) return
+                    event.preventDefault()
+                    reorderSection(sourceId, section.id)
+                  }}
                 >
                   <span className="outline-section__title">
                     {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -140,6 +205,9 @@ export function OutlinePanel() {
                               key={question.id}
                               question={question}
                               number={number}
+                              bulkMode={bulkMode}
+                              bulkSelected={bulkIds.has(question.id)}
+                              onToggleBulk={toggleBulkQuestion}
                             />
                           )
                         }
@@ -154,9 +222,21 @@ export function OutlinePanel() {
                                   : ''
                               }`}
                               onClick={() =>
-                                setSelection({ kind: 'question', id: question.id })
+                                bulkMode ? toggleBulkQuestion(question.id) : setSelection({ kind: 'question', id: question.id })
                               }
-                              title={questionSummary(question)}
+                            title={questionSummary(question)}
+                            draggable
+                            onDragStart={(event) => {
+                              event.dataTransfer.effectAllowed = 'move'
+                              event.dataTransfer.setData('application/x-quixam-question', question.id)
+                            }}
+                            onDragOver={(event) => event.preventDefault()}
+                            onDrop={(event) => {
+                              const sourceId = event.dataTransfer.getData('application/x-quixam-question')
+                              if (!sourceId) return
+                              event.preventDefault()
+                              reorderQuestion(sourceId, question.id)
+                            }}
                             >
                               <span className="outline-question__number">
                                 {count > 1 ? `${number}–${number + count - 1}` : number}
@@ -170,10 +250,13 @@ export function OutlinePanel() {
                             </button>
                             {(question.children ?? []).map((child, childIndex) => (
                               <QuestionOutlineItem
-                                key={child.id}
-                                question={child}
-                                number={number + childIndex}
-                                nested
+                              key={child.id}
+                              question={child}
+                              number={number + childIndex}
+                              nested
+                              bulkMode={bulkMode}
+                              bulkSelected={bulkIds.has(child.id)}
+                              onToggleBulk={toggleBulkQuestion}
                               />
                             ))}
                           </div>
@@ -188,6 +271,46 @@ export function OutlinePanel() {
             )
           })}
         </div>
+
+        {bulkMode ? (
+          <div className="outline-bulk-actions">
+            <strong>已选择 {bulkIds.size} 道题</strong>
+            <div>
+              <label>
+                分值
+                <input
+                  type="number"
+                  min={0}
+                  value={bulkScore}
+                  onChange={(event) => setBulkScore(event.target.value)}
+                />
+              </label>
+              <button
+                type="button"
+                className="mini-button"
+                disabled={bulkIds.size === 0}
+                onClick={() => updateQuestionScores([...bulkIds], Number(bulkScore) || 0)}
+              >
+                批量设置
+              </button>
+              <button
+                type="button"
+                className="icon-button is-danger"
+                title="批量删除"
+                aria-label="批量删除"
+                disabled={bulkIds.size === 0}
+                onClick={() => {
+                  if (!window.confirm(`删除选中的 ${bulkIds.size} 道题？`)) return
+                  removeQuestions([...bulkIds])
+                  exitBulkMode()
+                }}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+            <button type="button" className="ghost-button" onClick={exitBulkMode}>完成</button>
+          </div>
+        ) : null}
       </section>
 
       <section className="panel">

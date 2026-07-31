@@ -2,9 +2,12 @@ import { create } from 'zustand'
 import {
   DEFAULT_LAYOUT,
   type Paper,
+  type PaperSnapshot,
   type PaperInfo,
   type PaperLayout,
   type PaperMeta,
+  type CustomPaperTemplate,
+  type QuestionBankEntry,
   type Question,
   type QuestionImage,
   type QuestionType,
@@ -16,6 +19,14 @@ import { splitSegmentationText, splitSolutionText } from '../data/paperFactory'
 import { locateQuestion, QUESTION_TYPES } from '../utils/format'
 import { collectAssetIds, dataUrlToBlob } from '../utils/transfer'
 import { uid } from '../utils/id'
+import {
+  clonePaperAsNew,
+  cloneQuestion as cloneQuestionForReuse,
+  cloneSection,
+  makeQuestionBankEntry,
+  normalizeQuestionMetadata,
+  topLevelQuestions,
+} from '../utils/questionBank'
 
 export type Selection =
   | { kind: 'paper' }
@@ -31,6 +42,7 @@ interface PaperStore {
   selection: Selection
   zoom: number
   showAnswers: boolean
+  showAnswerSheet: boolean
   saveState: SaveState
   lastSavedAt: number | null
   /** undo/redo 历史（仅内存，不落库） */
@@ -45,6 +57,12 @@ interface PaperStore {
   importPaper: (json: string) => Promise<string | null>
   /** 保存并打开由扫描识别生成的新试卷 */
   addRecognizedPaper: (paper: Paper) => Promise<void>
+  duplicatePaper: () => Promise<void>
+  createPaperFromCustomTemplate: (template: CustomPaperTemplate) => Promise<void>
+  saveCurrentAsTemplate: (name: string) => Promise<CustomPaperTemplate | null>
+
+  createSnapshot: (label?: string) => Promise<void>
+  restoreSnapshot: (snapshot: PaperSnapshot) => Promise<void>
 
   undo: () => void
   redo: () => void
@@ -52,6 +70,7 @@ interface PaperStore {
   setSelection: (selection: Selection) => void
   setZoom: (zoom: number) => void
   toggleAnswers: () => void
+  toggleAnswerSheet: () => void
 
   renamePaper: (name: string) => void
   updateInfo: (patch: Partial<PaperInfo>) => void
@@ -60,6 +79,8 @@ interface PaperStore {
   addSection: () => void
   updateSection: (id: string, patch: Partial<Omit<Section, 'id' | 'questions'>>) => void
   moveSection: (id: string, dir: -1 | 1) => void
+  reorderSection: (id: string, beforeId: string) => void
+  duplicateSection: (id: string) => void
   removeSection: (id: string) => void
   /** 粘贴导入：把解析出的大题追加到当前试卷 */
   appendSections: (sections: Section[]) => void
@@ -69,10 +90,21 @@ interface PaperStore {
   addChildQuestion: (parentId: string, type: QuestionType) => void
   updateQuestion: (id: string, patch: Partial<Omit<Question, 'id'>>) => void
   moveQuestion: (id: string, dir: -1 | 1) => void
+  reorderQuestion: (id: string, beforeId: string) => void
   duplicateQuestion: (id: string) => void
   removeQuestion: (id: string) => void
+  updateQuestionScores: (ids: string[], score: number) => void
+  removeQuestions: (ids: string[]) => void
+  /** 从本地题库批量添加，若当前没有大题则自动创建。 */
+  addQuestionsFromBank: (entries: QuestionBankEntry[], sectionId?: string | null) => void
+  /** 新建或更新当前题关联的本地题库条目。 */
+  saveQuestionToBank: (id: string) => Promise<QuestionBankEntry | null>
+  /** 把当前试卷的顶层题目批量存入本地题库，材料题会连同子题一并保存。 */
+  saveAllQuestionsToBank: () => Promise<number>
 
   addQuestionImage: (questionId: string, file: File) => Promise<void>
+  /** 裁剪/旋转后写入新的本地图片资产，避免影响其他题目对同一图片的引用。 */
+  replaceQuestionImageAsset: (questionId: string, index: number, blob: Blob) => Promise<void>
   updateQuestionImage: (questionId: string, index: number, patch: Partial<QuestionImage>) => void
   removeQuestionImage: (questionId: string, index: number) => void
 }
@@ -81,12 +113,41 @@ const LAST_OPEN_KEY = 'lastOpenPaperId'
 const HISTORY_LIMIT = 100
 /** 该时间窗内的连续编辑合并为一个撤销步骤（连续打字不会一字一撤销） */
 const COALESCE_MS = 800
+/** 自动保存点的节流窗口：高频输入不应制造成百上千条历史版本。 */
+const AUTO_SNAPSHOT_MS = 5 * 60 * 1000
 
 let saveTimer: number | undefined
 let initStarted = false
 let lastSnapshotAt = 0
+const lastBackupAt = new Map<string, number>()
 /** 独立的脏标记：不能用 saveState 代替，否则落库 await 期间产生的编辑会被静默丢弃 */
 let dirty = false
+
+function copyPaperForSnapshot(paper: Paper): Paper {
+  // Paper 只包含 JSON 可序列化数据；保留原 id，恢复时才会写回同一张试卷。
+  return structuredClone(paper)
+}
+
+function makeSnapshot(paper: Paper, label: string): PaperSnapshot {
+  return {
+    id: uid(),
+    paperId: paper.id,
+    paperName: paper.name,
+    label,
+    createdAt: Date.now(),
+    paper: copyPaperForSnapshot(paper),
+  }
+}
+
+function queueAutomaticSnapshot(paper: Paper) {
+  const now = Date.now()
+  const previous = lastBackupAt.get(paper.id) ?? 0
+  if (now - previous < AUTO_SNAPSHOT_MS) return
+  lastBackupAt.set(paper.id, now)
+  void db.putPaperSnapshot(makeSnapshot(paper, '自动保存点')).catch(() => {
+    // 浏览器拒绝 IndexedDB 写入时不影响当前编辑和既有自动保存。
+  })
+}
 
 function toMeta(paper: Paper): PaperMeta {
   return { id: paper.id, name: paper.name, updatedAt: paper.updatedAt }
@@ -134,6 +195,8 @@ function migrateStoredQuestion(
     parts: legacyParts,
     segmentationText: legacySegmentationText,
     compositionStyle: legacyCompositionStyle,
+    metadata: legacyMetadata,
+    bankEntryId: legacyBankEntryId,
     ...rest
   } = legacy
   void _legacyAnswerStyle
@@ -147,6 +210,8 @@ function migrateStoredQuestion(
     answer: typeof legacy.answer === 'string' ? legacy.answer : '',
     answerLines: Number.isFinite(legacy.answerLines) ? Math.max(0, legacy.answerLines) : 0,
     images: legacy.images?.map((image) => ({ ...image })),
+    metadata: legacyMetadata ? normalizeQuestionMetadata(legacyMetadata) : undefined,
+    bankEntryId: typeof legacyBankEntryId === 'string' ? legacyBankEntryId : undefined,
   }
 
   if (
@@ -256,6 +321,8 @@ export async function flushSave(): Promise<void> {
 function mutatePaper(recipe: (paper: Paper) => Paper) {
   const state = usePaperStore.getState()
   if (!state.paper) return
+  // 先保留编辑前的可恢复版本；节流保证连续打字不会污染历史列表。
+  queueAutomaticSnapshot(state.paper)
   const next = { ...recipe(state.paper), updatedAt: Date.now() }
   const now = Date.now()
   const coalesce = now - lastSnapshotAt < COALESCE_MS
@@ -304,15 +371,16 @@ function moveInArray<T>(items: T[], index: number, dir: -1 | 1): T[] {
   return next
 }
 
+function moveBefore<T>(items: T[], from: number, before: number): T[] {
+  if (from < 0 || before < 0 || from >= items.length || before >= items.length || from === before) return items
+  const next = [...items]
+  const [item] = next.splice(from, 1)
+  next.splice(from < before ? before - 1 : before, 0, item)
+  return next
+}
+
 function cloneQuestion(question: Question): Question {
-  return {
-    ...question,
-    id: uid(),
-    options: [...question.options],
-    images: question.images?.map((image) => ({ ...image })),
-    parts: question.parts?.map((part) => ({ ...part, id: uid() })),
-    children: question.children?.map(cloneQuestion),
-  }
+  return cloneQuestionForReuse(question)
 }
 
 /** 导入 JSON 的归一化 + 版本迁移入口。宽松解析，缺字段补默认值。 */
@@ -372,6 +440,8 @@ function normalizeImportedPaper(raw: unknown, assetIdMap: Map<string, string>): 
       answer: str(q.answer),
       answerLines: num(q.answerLines, 0),
       images: normalizeImages(q.images),
+      metadata: q.metadata ? normalizeQuestionMetadata(q.metadata) : undefined,
+      bankEntryId: str(q.bankEntryId) || undefined,
     }
 
     if (
@@ -483,6 +553,7 @@ export const usePaperStore = create<PaperStore>((set, get) => ({
   selection: { kind: 'paper' },
   zoom: 100,
   showAnswers: false,
+  showAnswerSheet: false,
   saveState: 'idle',
   lastSavedAt: null,
   past: [],
@@ -541,6 +612,8 @@ export const usePaperStore = create<PaperStore>((set, get) => ({
     }
     const doomed = await db.getPaper(id)
     await db.deletePaperRecord(id)
+    await db.deletePaperSnapshots(id)
+    lastBackupAt.delete(id)
     // 回收只被这张卷引用的图片，否则 Blob 会在 IndexedDB 里无限累积
     if (doomed) {
       const orphans = collectAssetIds(doomed)
@@ -635,6 +708,86 @@ export const usePaperStore = create<PaperStore>((set, get) => ({
     }))
   },
 
+  duplicatePaper: async () => {
+    const source = get().paper
+    if (!source) return
+    await flushSave()
+    const paper = clonePaperAsNew(source)
+    await db.putPaper(paper)
+    await db.setMeta(LAST_OPEN_KEY, paper.id)
+    lastSnapshotAt = 0
+    set((state) => ({
+      paper,
+      paperList: [toMeta(paper), ...state.paperList],
+      selection: { kind: 'paper' },
+      past: [],
+      future: [],
+    }))
+  },
+
+  createPaperFromCustomTemplate: async (template) => {
+    await flushSave()
+    const paper = clonePaperAsNew(template.paper, template.name)
+    await db.putPaper(paper)
+    await db.setMeta(LAST_OPEN_KEY, paper.id)
+    lastSnapshotAt = 0
+    set((state) => ({
+      paper,
+      paperList: [toMeta(paper), ...state.paperList],
+      selection: { kind: 'paper' },
+      past: [],
+      future: [],
+    }))
+  },
+
+  saveCurrentAsTemplate: async (name) => {
+    const paper = get().paper
+    const trimmed = name.trim()
+    if (!paper || !trimmed) return null
+    const now = Date.now()
+    const template: CustomPaperTemplate = {
+      id: uid(),
+      name: trimmed,
+      createdAt: now,
+      updatedAt: now,
+      paper: copyPaperForSnapshot(paper),
+    }
+    await db.putCustomTemplate(template)
+    return template
+  },
+
+  createSnapshot: async (label = '手动保存点') => {
+    await flushSave()
+    const paper = get().paper
+    if (!paper) return
+    await db.putPaperSnapshot(makeSnapshot(paper, label.trim() || '手动保存点'))
+    lastBackupAt.set(paper.id, Date.now())
+  },
+
+  restoreSnapshot: async (snapshot) => {
+    const current = get().paper
+    if (!current || snapshot.paperId !== current.id) return
+    await flushSave()
+    await db.putPaperSnapshot(makeSnapshot(current, '恢复前版本'))
+    const restored: Paper = {
+      ...copyPaperForSnapshot(snapshot.paper),
+      id: current.id,
+      updatedAt: Date.now(),
+    }
+    await db.putPaper(restored)
+    lastSnapshotAt = 0
+    lastBackupAt.set(restored.id, Date.now())
+    set((state) => ({
+      paper: hydratePaper(restored),
+      paperList: state.paperList.map((meta) => (meta.id === restored.id ? toMeta(restored) : meta)),
+      selection: { kind: 'paper' },
+      past: [],
+      future: [],
+      saveState: 'saved',
+      lastSavedAt: Date.now(),
+    }))
+  },
+
   undo: () => {
     const { past, future, paper, paperList } = get()
     if (!paper || past.length === 0) return
@@ -666,6 +819,7 @@ export const usePaperStore = create<PaperStore>((set, get) => ({
   setSelection: (selection) => set({ selection }),
   setZoom: (zoom) => set({ zoom: Math.min(150, Math.max(50, zoom)) }),
   toggleAnswers: () => set((state) => ({ showAnswers: !state.showAnswers })),
+  toggleAnswerSheet: () => set((state) => ({ showAnswerSheet: !state.showAnswerSheet })),
 
   renamePaper: (name) => mutatePaper((paper) => ({ ...paper, name })),
   updateInfo: (patch) => mutatePaper((paper) => ({ ...paper, info: { ...paper.info, ...patch } })),
@@ -684,6 +838,30 @@ export const usePaperStore = create<PaperStore>((set, get) => ({
       ...paper,
       sections: moveInArray(paper.sections, paper.sections.findIndex((s) => s.id === id), dir),
     })),
+
+  reorderSection: (id, beforeId) =>
+    mutatePaper((paper) => ({
+      ...paper,
+      sections: moveBefore(
+        paper.sections,
+        paper.sections.findIndex((section) => section.id === id),
+        paper.sections.findIndex((section) => section.id === beforeId),
+      ),
+    })),
+
+  duplicateSection: (id) => {
+    const paper = get().paper
+    if (!paper) return
+    const index = paper.sections.findIndex((section) => section.id === id)
+    if (index < 0) return
+    const copy = cloneSection(paper.sections[index])
+    mutatePaper((current) => {
+      const sections = [...current.sections]
+      sections.splice(index + 1, 0, copy)
+      return { ...current, sections }
+    })
+    set({ selection: { kind: 'section', id: copy.id } })
+  },
 
   removeSection: (id) => {
     mutatePaper((paper) => ({ ...paper, sections: paper.sections.filter((s) => s.id !== id) }))
@@ -752,6 +930,16 @@ export const usePaperStore = create<PaperStore>((set, get) => ({
     )
   },
 
+  reorderQuestion: (id, beforeId) => {
+    const { paper } = get()
+    if (!paper || id === beforeId) return
+    const source = locateQuestion(paper, id)
+    const target = locateQuestion(paper, beforeId)
+    // 只允许在同一大题、同一材料题层级中排序，避免拖动时意外改变材料题归属。
+    if (!source || !target || source.sectionId !== target.sectionId || source.parentId !== target.parentId) return
+    mutateQuestionList(source.sectionId, source.parentId, (questions) => moveBefore(questions, source.index, target.index))
+  },
+
   duplicateQuestion: (id) => {
     const { paper } = get()
     if (!paper) return
@@ -781,6 +969,113 @@ export const usePaperStore = create<PaperStore>((set, get) => ({
     })
   },
 
+  updateQuestionScores: (ids, score) => {
+    const targetIds = new Set(ids)
+    if (targetIds.size === 0) return
+    const nextScore = Math.max(0, score)
+    mutatePaper((paper) => ({
+      ...paper,
+      sections: paper.sections.map((section) => ({
+        ...section,
+        questions: section.questions.map((question) => ({
+          ...question,
+          ...(question.type !== 'material' && targetIds.has(question.id) ? { score: nextScore } : {}),
+          children: question.children?.map((child) =>
+            targetIds.has(child.id) ? { ...child, score: nextScore } : child,
+          ),
+        })),
+      })),
+    }))
+  },
+
+  removeQuestions: (ids) => {
+    const targetIds = new Set(ids)
+    if (targetIds.size === 0) return
+    mutatePaper((paper) => ({
+      ...paper,
+      sections: paper.sections.map((section) => ({
+        ...section,
+        questions: section.questions
+          .filter((question) => !targetIds.has(question.id))
+          .map((question) => ({
+            ...question,
+            children: question.children?.filter((child) => !targetIds.has(child.id)),
+          })),
+      })),
+    }))
+    set({ selection: { kind: 'paper' } })
+  },
+
+  addQuestionsFromBank: (entries, sectionId) => {
+    if (entries.length === 0) return
+    const { paper, selection } = get()
+    if (!paper) return
+    const copies = entries.map((entry) => {
+      const copy = cloneQuestion(entry.question)
+      copy.bankEntryId = entry.id
+      return copy
+    })
+    let target = sectionId ? paper.sections.find((section) => section.id === sectionId) : undefined
+    if (!target && selection.kind === 'section') target = paper.sections.find((section) => section.id === selection.id)
+    if (!target && selection.kind === 'question') {
+      const location = locateQuestion(paper, selection.id)
+      if (location) target = paper.sections.find((section) => section.id === location.sectionId)
+    }
+    target ??= paper.sections[paper.sections.length - 1]
+    if (target) {
+      mutateQuestionList(target.id, null, (questions) => [...questions, ...copies])
+    } else {
+      const section = createSection('题库组卷')
+      mutatePaper((current) => ({ ...current, sections: [{ ...section, questions: copies }] }))
+    }
+    const usedAt = Date.now()
+    void Promise.all(entries.map((entry) => db.putQuestionBankEntry({
+      ...entry,
+      usageCount: entry.usageCount + 1,
+      updatedAt: usedAt,
+    }))).catch(() => {
+      // 题目已加进当前试卷；题库使用次数写入失败不应中断本地编辑。
+    })
+    set({ selection: { kind: 'question', id: copies[0].id } })
+  },
+
+  saveQuestionToBank: async (id) => {
+    const paper = get().paper
+    if (!paper) return null
+    const location = locateQuestion(paper, id)
+    if (!location) return null
+    const existing = location.question.bankEntryId
+      ? (await db.getQuestionBankEntries()).find((entry) => entry.id === location.question.bankEntryId)
+      : undefined
+    const entry = makeQuestionBankEntry(location.question, existing)
+    await db.putQuestionBankEntry(entry)
+    if (location.question.bankEntryId !== entry.id) get().updateQuestion(id, { bankEntryId: entry.id })
+    return entry
+  },
+
+  saveAllQuestionsToBank: async () => {
+    const paper = get().paper
+    if (!paper) return 0
+    const questions = topLevelQuestions(paper)
+    const existingById = new Map((await db.getQuestionBankEntries()).map((entry) => [entry.id, entry]))
+    const entries = questions.map((question) =>
+      makeQuestionBankEntry(question, question.bankEntryId ? existingById.get(question.bankEntryId) : undefined),
+    )
+    await Promise.all(entries.map((entry) => db.putQuestionBankEntry(entry)))
+    const idByQuestionId = new Map(entries.map((entry, index) => [questions[index].id, entry.id]))
+    mutatePaper((current) => ({
+      ...current,
+      sections: current.sections.map((section) => ({
+        ...section,
+        questions: section.questions.map((question) => ({
+          ...question,
+          bankEntryId: idByQuestionId.get(question.id) ?? question.bankEntryId,
+        })),
+      })),
+    }))
+    return entries.length
+  },
+
   addQuestionImage: async (questionId, file) => {
     const assetId = uid()
     await db.putAsset(assetId, file)
@@ -792,6 +1087,27 @@ export const usePaperStore = create<PaperStore>((set, get) => ({
     lastSnapshotAt = 0
     mutateQuestionList(location.sectionId, location.parentId, (questions) =>
       questions.map((q) => (q.id === questionId ? { ...q, images: [...(q.images ?? []), image] } : q)),
+    )
+  },
+
+  replaceQuestionImageAsset: async (questionId, index, blob) => {
+    const assetId = uid()
+    await db.putAsset(assetId, blob)
+    const { paper } = get()
+    if (!paper) return
+    const location = locateQuestion(paper, questionId)
+    if (!location) return
+    mutateQuestionList(location.sectionId, location.parentId, (questions) =>
+      questions.map((question) =>
+        question.id === questionId
+          ? {
+              ...question,
+              images: (question.images ?? []).map((image, imageIndex) =>
+                imageIndex === index ? { ...image, assetId } : image,
+              ),
+            }
+          : question,
+      ),
     )
   },
 

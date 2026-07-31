@@ -2,7 +2,10 @@ import { useMemo } from 'react'
 import katex from 'katex'
 import 'katex/contrib/mhchem'
 
-type Segment = { kind: 'text' | 'math' | 'code' | 'blank'; value: string }
+type Segment = {
+  kind: 'text' | 'math' | 'displayMath' | 'code' | 'blank' | 'bold' | 'underline' | 'emphasis' | 'sup' | 'sub'
+  value: string
+}
 
 /**
  * 公式 → HTML 的缓存。
@@ -22,19 +25,33 @@ function renderMath(tex: string): string {
   return html
 }
 
-/** 把文本按 `$...$` 公式、单反引号行内代码和句中答题横线切分。 */
+/**
+ * 轻量富文本约定：`$...$` 行内公式，`$$...$$` 独立公式，`**加粗**`，
+ * `__下划线__`，`==着重==`，`^上标^`，`~下标~`，以及行内代码和答题空位。
+ */
 function splitRichText(text: string): Segment[] {
   const segments: Segment[] = []
-  const pattern = /\$([^$]+)\$|`([^`\n]+)`|(_{3,}|＿{2,})/g
+  const pattern = /\$\$([\s\S]+?)\$\$|\$([^$]+)\$|`([^`\n]+)`|(_{3,}|＿{2,})|\*\*([^*\n]+)\*\*|__([^_\n]+)__|==([^=\n]+)==|\^([^^\n]+)\^|~([^~\n]+)~/g
   let lastIndex = 0
   let match: RegExpExecArray | null
   while ((match = pattern.exec(text)) !== null) {
     if (match.index > lastIndex) {
       segments.push({ kind: 'text', value: text.slice(lastIndex, match.index) })
     }
+    const kind: Segment['kind'] =
+      match[1] !== undefined ? 'displayMath'
+        : match[2] !== undefined ? 'math'
+          : match[3] !== undefined ? 'code'
+            : match[4] !== undefined ? 'blank'
+              : match[5] !== undefined ? 'bold'
+                : match[6] !== undefined ? 'underline'
+                  : match[7] !== undefined ? 'emphasis'
+                    : match[8] !== undefined ? 'sup'
+                      : match[9] !== undefined ? 'sub'
+                        : 'text'
     segments.push({
-      kind: match[1] !== undefined ? 'math' : match[2] !== undefined ? 'code' : 'blank',
-      value: match[1] ?? match[2] ?? match[3],
+      kind,
+      value: match[1] ?? match[2] ?? match[3] ?? match[4] ?? match[5] ?? match[6] ?? match[7] ?? match[8] ?? match[9] ?? '',
     })
     lastIndex = match.index + match[0].length
   }
@@ -45,7 +62,7 @@ function splitRichText(text: string): Segment[] {
 }
 
 /**
- * 渲染带 `$...$` 行内公式与单反引号代码的多行文本。
+ * 渲染带轻量富文本、公式与句中答题横线的多行文本。
  * mhchem 已注册到 KaTeX，因此化学式可写成 `$\ce{2H2 + O2 -> 2H2O}$`。
  */
 export function MathText({ text }: { text: string }) {
@@ -54,11 +71,11 @@ export function MathText({ text }: { text: string }) {
   return (
     <>
       {segments.map((segment, index) => {
-        if (segment.kind === 'math') {
+        if (segment.kind === 'math' || segment.kind === 'displayMath') {
           return (
           <span
             key={index}
-            className="math-inline"
+            className={segment.kind === 'displayMath' ? 'math-display' : 'math-inline'}
             dangerouslySetInnerHTML={{ __html: renderMath(segment.value) }}
           />
           )
@@ -80,6 +97,11 @@ export function MathText({ text }: { text: string }) {
             />
           )
         }
+        if (segment.kind === 'bold') return <strong key={index} className="rich-bold">{segment.value}</strong>
+        if (segment.kind === 'underline') return <span key={index} className="rich-underline">{segment.value}</span>
+        if (segment.kind === 'emphasis') return <span key={index} className="rich-emphasis">{segment.value}</span>
+        if (segment.kind === 'sup') return <sup key={index} className="rich-sup">{segment.value}</sup>
+        if (segment.kind === 'sub') return <sub key={index} className="rich-sub">{segment.value}</sub>
         return <span key={index}>{segment.value}</span>
       })}
     </>

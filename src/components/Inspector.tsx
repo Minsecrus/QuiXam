@@ -1,5 +1,5 @@
-import { useRef } from 'react'
-import { ArrowDown, ArrowUp, Copy, Plus, Trash2, X } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Archive, ArrowDown, ArrowUp, Copy, Crop, Plus, Trash2, X } from 'lucide-react'
 import { usePaperStore } from '../store/paperStore'
 import {
   cnNumber,
@@ -13,22 +13,83 @@ import {
 import { createQuestion } from '../data/templates'
 import { splitSegmentationText, splitSolutionText } from '../data/paperFactory'
 import { AssetImage } from './AssetImage'
+import { ImageCropDialog } from './ImageCropDialog'
 import { uid } from '../utils/id'
+import { normalizeQuestionMetadata } from '../utils/questionBank'
 import type {
   FontPreset,
   FontSizeLevel,
   LineHeightLevel,
   PageSize,
   Question,
+  QuestionDifficulty,
   QuestionType,
   Section,
 } from '../types'
 
+const DIFFICULTY_LABELS: Record<QuestionDifficulty, string> = {
+  unknown: '未标注',
+  easy: '基础',
+  medium: '中等',
+  hard: '较难',
+}
+
+function splitMetadataList(value: string): string[] {
+  return [...new Set(value.split(/[，,\n]/).map((item) => item.trim()).filter(Boolean))]
+}
+
+function QuestionMetadataEditor({ question }: { question: Question }) {
+  const updateQuestion = usePaperStore((s) => s.updateQuestion)
+  const metadata = normalizeQuestionMetadata(question.metadata)
+  const patchMetadata = (patch: Partial<typeof metadata>) => {
+    updateQuestion(question.id, { metadata: { ...metadata, ...patch } })
+  }
+
+  return (
+    <div className="metadata-editor">
+      <span className="metadata-editor__title">题库信息</span>
+      <div className="field-row">
+        <label className="field">
+          <span>难度</span>
+          <select value={metadata.difficulty} onChange={(event) => patchMetadata({ difficulty: event.target.value as QuestionDifficulty })}>
+            {(Object.keys(DIFFICULTY_LABELS) as QuestionDifficulty[]).map((value) => <option key={value} value={value}>{DIFFICULTY_LABELS[value]}</option>)}
+          </select>
+        </label>
+        <label className="field">
+          <span>年份</span>
+          <input
+            type="number"
+            min={1900}
+            max={2100}
+            placeholder="如 2026"
+            value={metadata.year ?? ''}
+            onChange={(event) => patchMetadata({ year: event.target.value ? Number(event.target.value) : undefined })}
+          />
+        </label>
+      </div>
+      <label className="field">
+        <span>知识点（逗号分隔）</span>
+        <input value={metadata.knowledgePoints.join('，')} onChange={(event) => patchMetadata({ knowledgePoints: splitMetadataList(event.target.value) })} />
+      </label>
+      <label className="field">
+        <span>标签（逗号分隔）</span>
+        <input value={metadata.tags.join('，')} onChange={(event) => patchMetadata({ tags: splitMetadataList(event.target.value) })} />
+      </label>
+      <label className="field">
+        <span>来源</span>
+        <input value={metadata.source} placeholder="如：2026 江苏适应性测试" onChange={(event) => patchMetadata({ source: event.target.value })} />
+      </label>
+    </div>
+  )
+}
+
 function ImagesEditor({ question }: { question: Question }) {
   const addQuestionImage = usePaperStore((s) => s.addQuestionImage)
+  const replaceQuestionImageAsset = usePaperStore((s) => s.replaceQuestionImageAsset)
   const updateQuestionImage = usePaperStore((s) => s.updateQuestionImage)
   const removeQuestionImage = usePaperStore((s) => s.removeQuestionImage)
   const fileRef = useRef<HTMLInputElement>(null)
+  const [cropTarget, setCropTarget] = useState<{ index: number; assetId: string } | null>(null)
 
   return (
     <div className="field">
@@ -60,6 +121,22 @@ function ImagesEditor({ question }: { question: Question }) {
               <option value="center">居中</option>
               <option value="right">靠右</option>
             </select>
+            <input
+              className="image-editor__caption"
+              value={image.caption ?? ''}
+              placeholder="图注（可选）"
+              aria-label="图注"
+              onChange={(e) => updateQuestionImage(question.id, index, { caption: e.target.value || undefined })}
+            />
+            <button
+              type="button"
+              className="icon-button"
+              title="裁剪或旋转"
+              aria-label="裁剪或旋转"
+              onClick={() => setCropTarget({ index, assetId: image.assetId })}
+            >
+              <Crop size={14} />
+            </button>
             <button
               type="button"
               className="icon-button is-danger"
@@ -86,6 +163,13 @@ function ImagesEditor({ question }: { question: Question }) {
           }}
         />
       </div>
+      {cropTarget ? (
+        <ImageCropDialog
+          assetId={cropTarget.assetId}
+          onClose={() => setCropTarget(null)}
+          onApply={(blob) => replaceQuestionImageAsset(question.id, cropTarget.index, blob)}
+        />
+      ) : null}
     </div>
   )
 }
@@ -298,6 +382,7 @@ function PaperInspector() {
 function SectionInspector({ section, index }: { section: Section; index: number }) {
   const updateSection = usePaperStore((s) => s.updateSection)
   const moveSection = usePaperStore((s) => s.moveSection)
+  const duplicateSection = usePaperStore((s) => s.duplicateSection)
   const removeSection = usePaperStore((s) => s.removeSection)
   const addQuestion = usePaperStore((s) => s.addQuestion)
 
@@ -319,6 +404,7 @@ function SectionInspector({ section, index }: { section: Section; index: number 
           <ItemActions
             onMoveUp={() => moveSection(section.id, -1)}
             onMoveDown={() => moveSection(section.id, 1)}
+            onDuplicate={() => duplicateSection(section.id)}
             onRemove={handleRemove}
           />
         </div>
@@ -367,6 +453,8 @@ function MaterialInspector({ question, number }: { question: Question; number: n
   const moveQuestion = usePaperStore((s) => s.moveQuestion)
   const duplicateQuestion = usePaperStore((s) => s.duplicateQuestion)
   const removeQuestion = usePaperStore((s) => s.removeQuestion)
+  const saveQuestionToBank = usePaperStore((s) => s.saveQuestionToBank)
+  const [bankMessage, setBankMessage] = useState('')
 
   const count = leafCount(question)
   const range = number !== null && count > 0 ? `（第 ${number}${count > 1 ? `–${number + count - 1}` : ''} 题）` : ''
@@ -421,6 +509,24 @@ function MaterialInspector({ question, number }: { question: Question; number: n
 
         <ImagesEditor question={question} />
 
+        <QuestionMetadataEditor question={question} />
+
+        <div className="field">
+          <button
+            type="button"
+            className="mini-button"
+            onClick={() => {
+              void saveQuestionToBank(question.id).then((entry) => {
+                setBankMessage(entry ? (question.bankEntryId ? '已更新本地题库。' : '已存入本地题库。') : '未能保存到题库。')
+              })
+            }}
+          >
+            <Archive size={13} />
+            {question.bankEntryId ? '更新题库材料' : '材料题存入本地题库'}
+          </button>
+          {bankMessage ? <small className="field-hint">{bankMessage}</small> : null}
+        </div>
+
         <div className="field">
           <span>添加子题</span>
           <div className="quick-actions">
@@ -455,6 +561,8 @@ function QuestionInspector({
   const moveQuestion = usePaperStore((s) => s.moveQuestion)
   const duplicateQuestion = usePaperStore((s) => s.duplicateQuestion)
   const removeQuestion = usePaperStore((s) => s.removeQuestion)
+  const saveQuestionToBank = usePaperStore((s) => s.saveQuestionToBank)
+  const [bankMessage, setBankMessage] = useState('')
 
   const isChoice = question.type === 'single' || question.type === 'multiple'
 
@@ -546,7 +654,7 @@ function QuestionInspector({
               ? '引导语（可留空）'
               : question.type === 'segmentation'
                 ? '作答说明'
-                : '题干（$…$ 公式 · 化学式用 \\ce{…}）'}
+                : '题干（$…$ 公式 · **加粗** · __下划线__ · | 表格 |）'}
           </span>
           <textarea
             rows={question.type === 'solution' || question.type === 'segmentation' ? 3 : 5}
@@ -740,6 +848,24 @@ function QuestionInspector({
             </label>
           </div>
         ) : null}
+
+        <QuestionMetadataEditor question={question} />
+
+        <div className="field">
+          <button
+            type="button"
+            className="mini-button"
+            onClick={() => {
+              void saveQuestionToBank(question.id).then((entry) => {
+                setBankMessage(entry ? (question.bankEntryId ? '已更新本地题库。' : '已存入本地题库。') : '未能保存到题库。')
+              })
+            }}
+          >
+            <Archive size={13} />
+            {question.bankEntryId ? '更新题库题目' : '存入本地题库'}
+          </button>
+          {bankMessage ? <small className="field-hint">{bankMessage}</small> : null}
+        </div>
 
         <label className="field">
           <span>参考答案</span>

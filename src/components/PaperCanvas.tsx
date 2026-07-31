@@ -30,12 +30,14 @@ function QuestionImages({ images }: { images?: QuestionImage[] }) {
   return (
     <div className="q-images">
       {images.map((image, index) => (
-        <AssetImage
+        <figure
           key={`${image.assetId}-${index}`}
-          assetId={image.assetId}
-          className={`q-image ${image.align === 'right' ? 'is-right' : 'is-center'}`}
+          className={`q-image-figure ${image.align === 'right' ? 'is-right' : 'is-center'}`}
           style={{ width: `${image.widthPercent}%` }}
-        />
+        >
+          <AssetImage assetId={image.assetId} className="q-image" />
+          {image.caption ? <figcaption>{image.caption}</figcaption> : null}
+        </figure>
       ))}
     </div>
   )
@@ -64,18 +66,60 @@ function optionColumns(options: string[]): 1 | 2 | 4 {
   return 1
 }
 
+function tableCells(line: string): string[] {
+  return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((cell) => cell.trim())
+}
+
+function isTableLine(line: string): boolean {
+  return /^\s*\|?.+\|.+\|?\s*$/.test(line)
+}
+
+function isTableDivider(line: string): boolean {
+  return tableCells(line).every((cell) => /^:?-{3,}:?$/.test(cell))
+}
+
+/** 支持 Markdown 风格的 | 表头 | 单元格 |，适合从 Word 粘贴后快速整理小表格。 */
 function QuestionStemText({ text }: { text: string }) {
-  return (
-    <>
-      {text.split('\n').map((line, index) => {
-        return (
-          <span key={index} className={index > 0 ? 'q-stem__line' : undefined}>
-            <MathText text={line} />
-          </span>
+  const lines = text.split('\n')
+  const nodes: ReactNode[] = []
+  for (let index = 0; index < lines.length;) {
+    if (isTableLine(lines[index])) {
+      const start = index
+      const tableLines: string[] = []
+      while (index < lines.length && isTableLine(lines[index])) {
+        tableLines.push(lines[index])
+        index += 1
+      }
+      const rows = tableLines.filter((line) => !isTableDivider(line)).map(tableCells)
+      if (rows.length >= 2) {
+        nodes.push(
+          <table className="rich-table" key={`table-${start}`}>
+            <tbody>
+              {rows.map((cells, rowIndex) => (
+                <tr key={rowIndex}>
+                  {cells.map((cell, cellIndex) => rowIndex === 0
+                    ? <th key={cellIndex}><MathText text={cell} /></th>
+                    : <td key={cellIndex}><MathText text={cell} /></td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>,
         )
-      })}
-    </>
-  )
+        continue
+      }
+      tableLines.forEach((line, tableIndex) => {
+        nodes.push(<span key={`line-${start + tableIndex}`} className={start + tableIndex > 0 ? 'q-stem__line' : undefined}><MathText text={line} /></span>)
+      })
+      continue
+    }
+    nodes.push(
+      <span key={`line-${index}`} className={index > 0 ? 'q-stem__line' : undefined}>
+        <MathText text={lines[index]} />
+      </span>,
+    )
+    index += 1
+  }
+  return <>{nodes}</>
 }
 
 function QuestionActions({ questionId }: { questionId: string }) {
@@ -665,6 +709,130 @@ function buildGroups(paper: Paper): { body: RenderGroup[]; answers: RenderGroup[
   return { body, answers }
 }
 
+function answerSheetRows(question: Question): number {
+  if (question.type === 'composition') return Math.max(question.answerLines, 12)
+  if (question.type === 'solution') {
+    const configured = (question.parts ?? []).reduce((sum, part) => sum + part.answerLines, 0)
+    return Math.max(configured, Math.max(question.parts?.length ?? 0, 1) * 2)
+  }
+  if (question.type === 'shortAnswer') return Math.max(question.answerLines, 2)
+  if (question.type === 'calculation') return Math.max(question.answerLines, 4)
+  return 2
+}
+
+const AnswerSheetChoices = memo(function AnswerSheetChoices({
+  items,
+}: {
+  items: Array<{ number: number; question: Question }>
+}) {
+  return (
+    <section className="answer-sheet-choice-grid">
+      {items.map(({ number, question }) => {
+        const optionCount = Math.max(question.options.length, 4)
+        return (
+          <div key={question.id} className="answer-sheet-choice-item">
+            <strong>{number}</strong>
+            {Array.from({ length: optionCount }).map((_, index) => (
+              <span key={index}>○ {String.fromCharCode(65 + index)}</span>
+            ))}
+          </div>
+        )
+      })}
+    </section>
+  )
+})
+
+const AnswerSheetSubjective = memo(function AnswerSheetSubjective({
+  number,
+  question,
+}: {
+  number: number
+  question: Question
+}) {
+  return (
+    <p className="answer-sheet-subjective-label">
+      <strong>第 {number} 题</strong>
+      <span>{question.score} 分</span>
+      {question.type === 'composition' ? <em>作文答题区</em> : null}
+    </p>
+  )
+})
+
+/** 独立答题卡与试卷正文共用分页器，保证预览、页码和打印结果一致。 */
+function buildAnswerSheetGroups(paper: Paper): RenderGroup[] {
+  const starts = sectionStartNumbers(paper)
+  const leaves = paper.sections.flatMap((section) => flattenLeaves(section, starts.get(section.id) ?? 1))
+  const isChoice = (question: Question) => question.type === 'single' || question.type === 'multiple'
+  const choices = leaves.filter(({ question }) => isChoice(question))
+  const subjective = leaves.filter(({ question }) => !isChoice(question))
+  const groups: RenderGroup[] = []
+
+  if (choices.length > 0) {
+    groups.push({
+      id: 'answer-sheet-choice-title',
+      keepWithNext: true,
+      pieces: [{
+        id: 'answer-sheet-choice-title',
+        kind: 'atom',
+        gapWeight: GAP_WEIGHT.tight,
+        node: <h4 className="answer-sheet-section-title font-hei">选择题填涂区</h4>,
+      }],
+    })
+    for (let index = 0; index < choices.length; index += 10) {
+      const chunk = choices.slice(index, index + 10)
+      groups.push({
+        id: `answer-sheet-choice:${index}`,
+        keepTogether: true,
+        pieces: [{
+          id: `answer-sheet-choice:${index}`,
+          kind: 'atom',
+          gapWeight: index === 0 ? GAP_WEIGHT.tight : GAP_WEIGHT.question,
+          node: <AnswerSheetChoices items={chunk} />,
+        }],
+      })
+    }
+  }
+
+  if (subjective.length > 0) {
+    groups.push({
+      id: 'answer-sheet-subjective-title',
+      keepWithNext: true,
+      pieces: [{
+        id: 'answer-sheet-subjective-title',
+        kind: 'atom',
+        gapWeight: choices.length > 0 ? GAP_WEIGHT.section : GAP_WEIGHT.tight,
+        node: <h4 className="answer-sheet-section-title font-hei">非选择题答题区</h4>,
+      }],
+    })
+    subjective.forEach(({ number, question }, index) => {
+      const rows = answerSheetRows(question)
+      groups.push({
+        id: `answer-sheet-subjective:${question.id}`,
+        pieces: [
+          {
+            id: `answer-sheet-subjective:${question.id}`,
+            kind: 'atom',
+            gapWeight: index === 0 ? GAP_WEIGHT.tight : GAP_WEIGHT.question,
+            node: <AnswerSheetSubjective number={number} question={question} />,
+          },
+          {
+            id: `answer-sheet-rows:${question.id}`,
+            kind: 'rows',
+            gapWeight: GAP_WEIGHT.tight,
+            count: rows,
+            render: (_start, count) =>
+              question.type === 'composition'
+                ? <CompositionRows count={count} style={question.compositionStyle ?? 'grid'} />
+                : <AnswerLines count={count} />,
+          },
+        ],
+      })
+    })
+  }
+
+  return groups
+}
+
 /** 测量期用来渲染片段；rows/space 型片段在测量时按全量渲染 */
 function renderPieceFull(piece: RenderPiece): ReactNode {
   if (piece.kind === 'atom') return piece.node
@@ -684,6 +852,7 @@ function PaperPages({ paper }: { paper: Paper }) {
   const setSelection = usePaperStore((s) => s.setSelection)
   const zoom = usePaperStore((s) => s.zoom)
   const showAnswers = usePaperStore((s) => s.showAnswers)
+  const showAnswerSheet = usePaperStore((s) => s.showAnswerSheet)
 
   const measureRef = useRef<HTMLDivElement>(null)
   /** 分页结果与它所依据的行高一并落到同一份 state，避免两次 setState 造成级联渲染 */
@@ -696,13 +865,14 @@ function PaperPages({ paper }: { paper: Paper }) {
 
   const geometry = useMemo(() => paperGeometry(paper.layout), [paper.layout])
   const { body, answers } = useMemo(() => buildGroups(paper), [paper])
+  const answerSheet = useMemo(() => buildAnswerSheetGroups(paper), [paper])
   const pieceById = useMemo(() => {
     const map = new Map<string, RenderPiece>()
-    for (const group of [...body, ...answers]) {
+    for (const group of [...body, ...answerSheet, ...answers]) {
       for (const piece of group.pieces) map.set(piece.id, piece)
     }
     return map
-  }, [body, answers])
+  }, [body, answerSheet, answers])
 
   const isChinesePaper = /语文/.test(`${paper.name} ${paper.info.title}`)
   const typographyClass = `paper-type body-${paper.layout.bodyFont} size-${paper.layout.fontSize} lh-${paper.layout.lineHeight}${isChinesePaper ? ' is-chinese' : ''}`
@@ -736,6 +906,16 @@ function PaperPages({ paper }: { paper: Paper }) {
   )
 
   const answerHead = <h3 className="answer-key__title font-hei">参考答案</h3>
+  const answerSheetHead = (
+    <header className="answer-sheet-head">
+      <h3 className="font-hei">{paper.info.title || '试卷'}答题卡</h3>
+      <p>
+        <span>班级：＿＿＿＿＿＿</span>{' '}
+        <span>姓名：＿＿＿＿＿＿</span>{' '}
+        <span>考号：＿＿＿＿＿＿</span>
+      </p>
+    </header>
+  )
 
   // 测量必须在浏览器绘制前完成，否则会闪一下未分页的内容
   useLayoutEffect(() => {
@@ -806,11 +986,19 @@ function PaperPages({ paper }: { paper: Paper }) {
           ...shared,
           bannerHeight: heightOf('[data-measure="answer-head"]'),
           banner: 'answer-head',
+      })
+      : []
+
+    const answerSheetPages = showAnswerSheet
+      ? paginate(toFlow(answerSheet), {
+          ...shared,
+          bannerHeight: heightOf('[data-measure="answer-sheet-head"]'),
+          banner: 'answer-sheet-head',
         })
       : []
 
-    setPlan({ pages: [...bodyPages, ...answerPages], baseLineHeight: lineHeight })
-  }, [body, answers, geometry, showAnswers, contentEpoch, paper.layout])
+    setPlan({ pages: [...bodyPages, ...answerSheetPages, ...answerPages], baseLineHeight: lineHeight })
+  }, [body, answerSheet, answers, geometry, showAnswerSheet, showAnswers, contentEpoch, paper.layout])
 
   /**
    * 测量必须由真实的 DOM 尺寸变化驱动，不能只靠 React 依赖 ——
@@ -824,7 +1012,7 @@ function PaperPages({ paper }: { paper: Paper }) {
     const observer = new ResizeObserver(() => setContentEpoch((epoch) => epoch + 1))
     for (const element of root.querySelectorAll('[data-piece-id]')) observer.observe(element)
     return () => observer.disconnect()
-  }, [body, answers, geometry])
+  }, [body, answerSheet, answers, geometry])
 
   /** 把分页结果里的一片还原成 DOM。切开的片用 overflow:hidden + 负 margin 承接上一片。 */
   const renderSlice = (slice: PlacedSlice): ReactNode => {
@@ -878,7 +1066,11 @@ function PaperPages({ paper }: { paper: Paper }) {
               {page.banner ? (
                 // 页眉与正文之间的间距是"灵活度 2"的那一档，两端对齐时优先被拉开
                 <div style={{ marginBottom: page.bannerGap }}>
-                  {page.banner === 'paper-head' ? paperHead : answerHead}
+                  {page.banner === 'paper-head'
+                    ? paperHead
+                    : page.banner === 'answer-head'
+                      ? answerHead
+                      : answerSheetHead}
                 </div>
               ) : null}
               <div className="page-columns" style={columnsStyle}>
@@ -924,8 +1116,11 @@ function PaperPages({ paper }: { paper: Paper }) {
         <div data-measure="answer-head" style={{ width: `${geometry.contentWidthMm}mm` }}>
           {answerHead}
         </div>
+        <div data-measure="answer-sheet-head" style={{ width: `${geometry.contentWidthMm}mm` }}>
+          {answerSheetHead}
+        </div>
         <div style={{ width: `${geometry.columnWidthMm}mm` }}>
-          {[...body, ...answers].flatMap((group) =>
+          {[...body, ...answerSheet, ...answers].flatMap((group) =>
             group.pieces.map((piece) => (
               <div className="p-block" data-piece-id={piece.id} key={piece.id}>
                 {renderPieceFull(piece)}

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { FileText, ImageUp, KeyRound, LoaderCircle, ScanText, Trash2, Upload, X } from 'lucide-react'
 import { usePaperStore } from '../store/paperStore'
-import { cnNumber, paperScore, questionCount, sectionLeafCount, sectionScore } from '../utils/format'
+import { cnNumber, LEAF_QUESTION_TYPES, paperScore, questionCount, QUESTION_TYPE_LABELS, sectionLeafCount, sectionScore } from '../utils/format'
 import { hydrateRecognizedPaper, recognizePaper } from '../utils/paperRecognition'
-import type { Paper } from '../types'
+import type { Paper, Question, QuestionType } from '../types'
 
 const DEFAULT_BASE_URL = 'https://api.openai.com/v1'
 const DEFAULT_MODEL = 'gpt-5.6-luna'
@@ -47,6 +47,76 @@ function containsFigureMarker(paper: Paper): boolean {
   )
 }
 
+function containsUnclearMarker(paper: Paper): boolean {
+  return paper.sections.some((section) =>
+    section.questions.some((question) => {
+      const text = [question.stem, question.material, question.answer, ...(question.parts ?? []).map((part) => part.stem)].join('\n')
+      if (text.includes('[无法辨认]')) return true
+      return question.children?.some((child) => [child.stem, child.answer, ...(child.parts ?? []).map((part) => part.stem)].join('\n').includes('[无法辨认]')) ?? false
+    }),
+  )
+}
+
+interface ReviewItem {
+  id: string
+  label: string
+  question: Question
+}
+
+function reviewItems(paper: Paper): ReviewItem[] {
+  const items: ReviewItem[] = []
+  let number = 1
+  paper.sections.forEach((section, sectionIndex) => {
+    section.questions.forEach((question) => {
+      if (question.type === 'material') {
+        const childCount = question.children?.length ?? 0
+        items.push({
+          id: question.id,
+          label: `${cnNumber(sectionIndex + 1)}、${section.title} · 材料${childCount > 0 ? `（第 ${number}–${number + childCount - 1} 题）` : ''}`,
+          question,
+        })
+        for (const child of question.children ?? []) {
+          items.push({ id: child.id, label: `第 ${number} 题 · ${QUESTION_TYPE_LABELS[child.type]}`, question: child })
+          number += 1
+        }
+      } else {
+        items.push({ id: question.id, label: `第 ${number} 题 · ${QUESTION_TYPE_LABELS[question.type]}`, question })
+        number += 1
+      }
+    })
+  })
+  return items
+}
+
+function updateDraftQuestion(paper: Paper, id: string, patch: Partial<Question>): Paper {
+  const update = (question: Question): Question => {
+    if (question.id === id) return { ...question, ...patch }
+    if (!question.children) return question
+    const children = question.children.map(update)
+    return children.every((child, index) => child === question.children?.[index]) ? question : { ...question, children }
+  }
+  return { ...paper, sections: paper.sections.map((section) => ({ ...section, questions: section.questions.map(update) })) }
+}
+
+function SourceFilesPreview({ files }: { files: File[] }) {
+  const previews = useMemo(
+    () => files.map((file) => ({ file, url: URL.createObjectURL(file), pdf: file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf') })),
+    [files],
+  )
+  useEffect(() => () => previews.forEach((item) => URL.revokeObjectURL(item.url)), [previews])
+  if (previews.length === 0) return null
+  return (
+    <div className="scan-source-preview" aria-label="原卷预览">
+      {previews.map(({ file, url, pdf }) => (
+        <figure key={fileKey(file)}>
+          {pdf ? <embed src={url} type="application/pdf" title={file.name} /> : <img src={url} alt={`原卷：${file.name}`} />}
+          <figcaption title={file.name}>{file.name}</figcaption>
+        </figure>
+      ))}
+    </div>
+  )
+}
+
 export function ScanImportDialog({ onClose }: { onClose: () => void }) {
   const [files, setFiles] = useState<File[]>([])
   const [apiKey, setApiKey] = useState(loadStoredApiKey)
@@ -56,6 +126,7 @@ export function ScanImportDialog({ onClose }: { onClose: () => void }) {
   const [isRecognizing, setIsRecognizing] = useState(false)
   const [error, setError] = useState('')
   const [recognizedPaper, setRecognizedPaper] = useState<Paper | null>(null)
+  const [reviewId, setReviewId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const controllerRef = useRef<AbortController | null>(null)
 
@@ -75,8 +146,12 @@ export function ScanImportDialog({ onClose }: { onClose: () => void }) {
       questions: questionCount(recognizedPaper),
       score: paperScore(recognizedPaper),
       hasFigureMarker: containsFigureMarker(recognizedPaper),
+      hasUnclearMarker: containsUnclearMarker(recognizedPaper),
     }
   }, [recognizedPaper])
+
+  const reviewList = useMemo(() => recognizedPaper ? reviewItems(recognizedPaper) : [], [recognizedPaper])
+  const reviewedQuestion = reviewList.find((item) => item.id === reviewId) ?? reviewList[0]
 
   const addFiles = (incoming: File[]) => {
     if (incoming.length === 0) return
@@ -91,12 +166,14 @@ export function ScanImportDialog({ onClose }: { onClose: () => void }) {
       return [...current, ...additions]
     })
     setRecognizedPaper(null)
+    setReviewId(null)
     setError('')
   }
 
   const removeFile = (target: File) => {
     setFiles((current) => current.filter((file) => fileKey(file) !== fileKey(target)))
     setRecognizedPaper(null)
+    setReviewId(null)
     setError('')
   }
 
@@ -136,7 +213,9 @@ export function ScanImportDialog({ onClose }: { onClose: () => void }) {
         },
         controller.signal,
       )
-      setRecognizedPaper(hydrateRecognizedPaper(draft))
+      const hydrated = hydrateRecognizedPaper(draft)
+      setRecognizedPaper(hydrated)
+      setReviewId(reviewItems(hydrated)[0]?.id ?? null)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '识别失败，请稍后重试')
     } finally {
@@ -157,6 +236,23 @@ export function ScanImportDialog({ onClose }: { onClose: () => void }) {
     if (!recognizedPaper) return
     appendSections(recognizedPaper.sections)
     onClose()
+  }
+
+  const patchReviewedQuestion = (patch: Partial<Question>) => {
+    if (!reviewedQuestion) return
+    setRecognizedPaper((current) => current ? updateDraftQuestion(current, reviewedQuestion.id, patch) : current)
+  }
+
+  const changeReviewedType = (type: QuestionType) => {
+    if (!reviewedQuestion || reviewedQuestion.question.type === 'material') return
+    const choice = type === 'single' || type === 'multiple'
+    patchReviewedQuestion({
+      type,
+      options: choice
+        ? reviewedQuestion.question.options.length >= 2 ? reviewedQuestion.question.options : ['', '', '', '']
+        : [],
+      ...(type === 'solution' ? {} : { parts: undefined }),
+    })
   }
 
   const canRecognize =
@@ -319,6 +415,63 @@ export function ScanImportDialog({ onClose }: { onClose: () => void }) {
               </small>
             </div>
 
+            <div className="scan-review">
+              <SourceFilesPreview files={files} />
+              <div className="scan-review__editor">
+                <label className="field">
+                  <span>逐题校对</span>
+                  <select value={reviewedQuestion?.id ?? ''} onChange={(event) => setReviewId(event.target.value)}>
+                    {reviewList.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                  </select>
+                </label>
+                {reviewedQuestion ? (
+                  <>
+                    {reviewedQuestion.question.type === 'material' ? (
+                      <>
+                        <label className="field">
+                          <span>引导语</span>
+                          <textarea rows={3} value={reviewedQuestion.question.stem} onChange={(event) => patchReviewedQuestion({ stem: event.target.value })} />
+                        </label>
+                        <label className="field">
+                          <span>材料正文</span>
+                          <textarea rows={8} value={reviewedQuestion.question.material ?? ''} onChange={(event) => patchReviewedQuestion({ material: event.target.value })} />
+                        </label>
+                      </>
+                    ) : (
+                      <>
+                        <div className="field-row">
+                          <label className="field">
+                            <span>题型</span>
+                            <select value={reviewedQuestion.question.type} onChange={(event) => changeReviewedType(event.target.value as QuestionType)}>
+                              {LEAF_QUESTION_TYPES.map((item) => <option key={item} value={item}>{QUESTION_TYPE_LABELS[item]}</option>)}
+                            </select>
+                          </label>
+                          <label className="field">
+                            <span>分值</span>
+                            <input type="number" min={0} value={reviewedQuestion.question.score} onChange={(event) => patchReviewedQuestion({ score: Number(event.target.value) || 0 })} />
+                          </label>
+                        </div>
+                        <label className="field">
+                          <span>题干</span>
+                          <textarea rows={6} value={reviewedQuestion.question.stem} onChange={(event) => patchReviewedQuestion({ stem: event.target.value })} />
+                        </label>
+                        {reviewedQuestion.question.type === 'single' || reviewedQuestion.question.type === 'multiple' ? (
+                          <label className="field">
+                            <span>选项（每行一项）</span>
+                            <textarea rows={4} value={reviewedQuestion.question.options.join('\n')} onChange={(event) => patchReviewedQuestion({ options: event.target.value.split('\n') })} />
+                          </label>
+                        ) : null}
+                        <label className="field">
+                          <span>参考答案（原卷明确给出时才填写）</span>
+                          <textarea rows={2} value={reviewedQuestion.question.answer} onChange={(event) => patchReviewedQuestion({ answer: event.target.value })} />
+                        </label>
+                      </>
+                    )}
+                  </>
+                ) : <p className="panel-hint">没有可校对的题目。</p>}
+              </div>
+            </div>
+
             <div className="dialog__preview">
               <ul className="scan-result__sections">
                 {recognizedPaper.sections.map((section, index) => (
@@ -342,10 +495,11 @@ export function ScanImportDialog({ onClose }: { onClose: () => void }) {
             ) : null}
             {stats?.hasFigureMarker ? (
               <p className="scan-warning">
-                原卷包含图表；首版会保留“[图表见原卷]”位置标记，尚不会自动裁切题图。
+                原卷包含图表；已保留“[图表见原卷]”位置标记。可导入后在题目属性中补入或裁剪题图。
               </p>
             ) : null}
-            <p className="panel-hint">AI 识别可能有误，导入后请对照原卷检查文字、公式、题型和分值。</p>
+            {stats?.hasUnclearMarker ? <p className="scan-warning">识别结果含“[无法辨认]”标记，请在导入前逐项核对。</p> : null}
+            <p className="panel-hint">AI 识别可能有误。此处的校对只修改本地草稿，确认后才会新建或追加试卷。</p>
           </div>
         )}
 
