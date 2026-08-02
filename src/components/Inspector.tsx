@@ -3,12 +3,14 @@ import { Archive, ArrowDown, ArrowUp, Copy, Crop, Plus, Trash2, X } from 'lucide
 import { usePaperStore } from '../store/paperStore'
 import {
   cnNumber,
+  isReadingQuestion,
   leafCount,
   LEAF_QUESTION_TYPES,
   locateQuestion,
   questionNumber,
   QUESTION_TYPES,
   QUESTION_TYPE_LABELS,
+  READING_QUESTION_TYPES,
 } from '../utils/format'
 import { createQuestion } from '../data/templates'
 import { splitSegmentationText, splitSolutionText } from '../data/paperFactory'
@@ -24,6 +26,7 @@ import type {
   Question,
   QuestionDifficulty,
   QuestionType,
+  ReadingBlank,
   Section,
 } from '../types'
 
@@ -530,7 +533,7 @@ function MaterialInspector({ question, number }: { question: Question; number: n
         <div className="field">
           <span>添加子题</span>
           <div className="quick-actions">
-            {LEAF_QUESTION_TYPES.map((type) => (
+            {LEAF_QUESTION_TYPES.filter((type) => !READING_QUESTION_TYPES.includes(type)).map((type) => (
               <button
                 key={type}
                 type="button"
@@ -545,6 +548,99 @@ function MaterialInspector({ question, number }: { question: Question; number: n
         </div>
       </div>
     </section>
+  )
+}
+
+function ReadingBlanksEditor({ question }: { question: Question }) {
+  const updateQuestion = usePaperStore((s) => s.updateQuestion)
+  const blanks = question.readingBlanks ?? []
+  const isCloze = question.type === 'cloze'
+
+  const patchBlanks = (next: ReadingBlank[]) => {
+    updateQuestion(question.id, {
+      readingBlanks: next,
+      score: next.reduce((sum, blank) => sum + blank.score, 0),
+    })
+  }
+
+  const patchBlank = (id: string, patch: Partial<ReadingBlank>) => {
+    patchBlanks(blanks.map((blank) => (blank.id === id ? { ...blank, ...patch } : blank)))
+  }
+
+  return (
+    <div className="field">
+      <span>{isCloze ? '各空（文章后的选项按空排列）' : '各空（文章内保留 ____ 编号）'}</span>
+      <div className="reading-blank-editor">
+        {blanks.map((blank, index) => (
+          <div key={blank.id} className="reading-blank-editor__item">
+            <div className="reading-blank-editor__head">
+              <span>第 {index + 1} 空</span>
+              <button
+                type="button"
+                className="icon-button is-danger"
+                title="删除该空"
+                onClick={() => patchBlanks(blanks.filter((item) => item.id !== blank.id))}
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <div className="field-row">
+              <label className="field">
+                <span>答案</span>
+                <input
+                  value={blank.answer}
+                  placeholder={isCloze ? '如 C' : '如 B'}
+                  onChange={(event) => patchBlank(blank.id, { answer: event.target.value })}
+                />
+              </label>
+              <label className="field">
+                <span>分值</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={blank.score}
+                  onChange={(event) => patchBlank(blank.id, { score: Number(event.target.value) || 0 })}
+                />
+              </label>
+            </div>
+            {isCloze ? (
+              <div className="reading-blank-editor__options">
+                {Array.from({ length: Math.max(blank.options.length, 4) }).map((_, optionIndex) => (
+                  <label key={optionIndex} className="field">
+                    <span>{String.fromCharCode(65 + optionIndex)}</span>
+                    <input
+                      value={blank.options[optionIndex] ?? ''}
+                      onChange={(event) => {
+                        const options = [...blank.options]
+                        options[optionIndex] = event.target.value
+                        patchBlank(blank.id, { options })
+                      }}
+                    />
+                  </label>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ))}
+        <button
+          type="button"
+          className="mini-button"
+          onClick={() => patchBlanks([
+            ...blanks,
+            {
+              id: uid(),
+              score: isCloze ? 1 : 2.5,
+              answer: '',
+              options: isCloze ? ['', '', '', ''] : [],
+            },
+          ])}
+        >
+          <Plus size={13} />
+          添加空
+        </button>
+      </div>
+      {!isCloze ? <small className="field-hint">七选五的 A–G 选项请作为文章末尾内容录入，卷面不再生成附加小题。</small> : null}
+    </div>
   )
 }
 
@@ -565,10 +661,12 @@ function QuestionInspector({
   const [bankMessage, setBankMessage] = useState('')
 
   const isChoice = question.type === 'single' || question.type === 'multiple'
+  const isReading = isReadingQuestion(question)
 
   const handleTypeChange = (type: QuestionType) => {
     if (type === 'material') return
     const defaults = createQuestion(type)
+    const nextIsReading = READING_QUESTION_TYPES.includes(type)
     const carriedStem =
       question.type === 'solution'
         ? [question.stem, ...(question.parts ?? []).map((part) => part.stem)].filter(Boolean).join('\n')
@@ -599,6 +697,15 @@ function QuestionInspector({
       parts: structuredSolution?.parts,
       compositionStyle:
         type === 'composition' ? question.compositionStyle ?? defaults.compositionStyle : undefined,
+      material: nextIsReading ? question.material ?? '' : undefined,
+      readingBlanks: nextIsReading
+        ? (question.readingBlanks?.length
+          ? question.readingBlanks.map((blank) => ({
+              ...blank,
+              options: type === 'cloze' ? (blank.options.length >= 2 ? [...blank.options] : ['', '', '', '']) : [],
+            }))
+          : defaults.readingBlanks)
+        : undefined,
     })
   }
 
@@ -630,7 +737,7 @@ function QuestionInspector({
           <label className="field">
             <span>题型</span>
             <select value={question.type} onChange={(e) => handleTypeChange(e.target.value as QuestionType)}>
-              {LEAF_QUESTION_TYPES.map((type) => (
+              {LEAF_QUESTION_TYPES.filter((type) => !isChild || !READING_QUESTION_TYPES.includes(type) || type === question.type).map((type) => (
                 <option key={type} value={type}>
                   {QUESTION_TYPE_LABELS[type]}
                 </option>
@@ -654,6 +761,8 @@ function QuestionInspector({
               ? '引导语（可留空）'
               : question.type === 'segmentation'
                 ? '作答说明'
+                : isReading
+                  ? '作答说明'
                 : '题干（$…$ 公式 · **加粗** · __下划线__ · | 表格 |）'}
           </span>
           <textarea
@@ -662,6 +771,17 @@ function QuestionInspector({
             onChange={(e) => updateQuestion(question.id, { stem: e.target.value })}
           />
         </label>
+
+        {isReading ? (
+          <label className="field">
+            <span>文章（保留空号和换行）</span>
+            <textarea
+              rows={12}
+              value={question.material ?? ''}
+              onChange={(event) => updateQuestion(question.id, { material: event.target.value })}
+            />
+          </label>
+        ) : null}
 
         {question.type === 'segmentation' ? (
           <label className="field">
@@ -769,7 +889,9 @@ function QuestionInspector({
           </div>
         ) : null}
 
-        <ImagesEditor question={question} />
+        {isReading ? <ReadingBlanksEditor question={question} /> : null}
+
+        {!isReading ? <ImagesEditor question={question} /> : null}
 
         {isChoice ? (
           <div className="field">
@@ -867,15 +989,17 @@ function QuestionInspector({
           {bankMessage ? <small className="field-hint">{bankMessage}</small> : null}
         </div>
 
-        <label className="field">
-          <span>参考答案</span>
-          <textarea
-            rows={3}
-            value={question.answer}
-            placeholder={isChoice ? 'B / ABD' : ''}
-            onChange={(e) => updateQuestion(question.id, { answer: e.target.value })}
-          />
-        </label>
+        {!isReading ? (
+          <label className="field">
+            <span>参考答案</span>
+            <textarea
+              rows={3}
+              value={question.answer}
+              placeholder={isChoice ? 'B / ABD' : ''}
+              onChange={(e) => updateQuestion(question.id, { answer: e.target.value })}
+            />
+          </label>
+        ) : null}
       </div>
     </section>
   )

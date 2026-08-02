@@ -19,7 +19,7 @@ const difficultyLabel: Record<QuestionDifficulty, string> = {
   hard: '较难',
 }
 
-const typeOptions: Array<QuestionType | 'all'> = ['all', 'single', 'multiple', 'fill', 'segmentation', 'calculation', 'shortAnswer', 'solution', 'composition', 'material']
+const typeOptions: Array<QuestionType | 'all'> = ['all', 'single', 'multiple', 'sevenChoice', 'cloze', 'fill', 'segmentation', 'calculation', 'shortAnswer', 'solution', 'composition', 'material']
 
 function parseNumber(value: string): number {
   const number = Number(value)

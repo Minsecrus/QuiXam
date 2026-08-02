@@ -4,10 +4,12 @@ import { usePaperStore } from '../store/paperStore'
 import {
   cnNumber,
   flattenLeaves,
+  isReadingQuestion,
   sectionItemNumbers,
   sectionLeafCount,
   sectionScore,
   sectionStartNumbers,
+  type FlattenedQuestion,
 } from '../utils/format'
 import { mmToPx, paperGeometry, PAGE_SAFETY_MM } from '../utils/paperGeometry'
 import {
@@ -296,6 +298,29 @@ const MaterialPart = memo(function MaterialPart({
   )
 })
 
+const ClozeOptions = memo(function ClozeOptions({
+  startNumber,
+  question,
+}: {
+  startNumber: number
+  question: Question
+}) {
+  return (
+    <div className="cloze-options">
+      {(question.readingBlanks ?? []).map((blank, index) => (
+        <div key={blank.id} className="cloze-option-row">
+          <strong>{startNumber + index}．</strong>
+          {blank.options.map((option, optionIndex) => (
+            <span key={optionIndex} className="cloze-option">
+              {String.fromCharCode(65 + optionIndex)}．<MathText text={option} />
+            </span>
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+})
+
 /** 题目主体：题号、分值、题干、附图、选项。答题区是独立片段，不在这里。 */
 const QuestionBlock = memo(function QuestionBlock({
   question,
@@ -527,6 +552,47 @@ function materialPieces(question: Question, firstInSection: boolean): RenderPiec
   return pieces
 }
 
+/** 七选五和完形填空共享文章排版，但不再把每个空渲染成普通附加小题。 */
+function readingPieces(question: Question, firstInSection: boolean, startNumber: number): RenderPiece[] {
+  const gapWeight = firstInSection ? GAP_WEIGHT.tight : GAP_WEIGHT.question
+  const lines = (question.material ?? '').split('\n')
+  const pieces: RenderPiece[] = []
+
+  lines.forEach((line, index) => {
+    pieces.push({
+      id: `reading:${question.id}:${index}`,
+      kind: 'atom',
+      lineBreakable: true,
+      gapWeight: index === 0 ? gapWeight : GAP_WEIGHT.tight,
+      node: (
+        <MaterialPart questionId={question.id} showActions={index === 0}>
+          {index === 0 && question.stem ? (
+            <div className="q-stem">
+              <MathText text={question.stem} />
+            </div>
+          ) : null}
+          {materialLine(line, index)}
+        </MaterialPart>
+      ),
+    })
+  })
+
+  if (question.type === 'cloze' && (question.readingBlanks?.length ?? 0) > 0) {
+    pieces.push({
+      id: `reading:${question.id}:options`,
+      kind: 'atom',
+      gapWeight: GAP_WEIGHT.tight,
+      node: (
+        <MaterialPart questionId={question.id}>
+          <ClozeOptions startNumber={startNumber} question={question} />
+        </MaterialPart>
+      ),
+    })
+  }
+
+  return pieces
+}
+
 /** 题后答题区由语义题型决定，不再依赖全卷或单题的样式开关。 */
 function answerPieces(question: Question): RenderPiece[] {
   if (question.answerLines <= 0) return []
@@ -598,20 +664,28 @@ function buildGroups(paper: Paper): { body: RenderGroup[]; answers: RenderGroup[
   const body: RenderGroup[] = []
 
   /** first：本大题的第一题，它与大题标题之间不该被拉开（标题向下绑定） */
-  const questionGroup = (question: Question, number: number, first: boolean): RenderGroup => ({
-    id: `q:${question.id}`,
-    keepTogether: true,
-    pieces: [
-      {
-        id: `q:${question.id}`,
-        kind: 'atom',
-        gapWeight: first ? GAP_WEIGHT.tight : GAP_WEIGHT.question,
-        node: <QuestionBlock question={question} number={number} />,
-      },
-      ...solutionPieces(question),
-      ...answerPieces(question),
-    ],
-  })
+  const questionGroup = (question: Question, number: number, first: boolean): RenderGroup => {
+    if (isReadingQuestion(question)) {
+      return {
+        id: `reading:${question.id}`,
+        pieces: readingPieces(question, first, number),
+      }
+    }
+    return {
+      id: `q:${question.id}`,
+      keepTogether: true,
+      pieces: [
+        {
+          id: `q:${question.id}`,
+          kind: 'atom',
+          gapWeight: first ? GAP_WEIGHT.tight : GAP_WEIGHT.question,
+          node: <QuestionBlock question={question} number={number} />,
+        },
+        ...solutionPieces(question),
+        ...answerPieces(question),
+      ],
+    }
+  }
 
   paper.sections.forEach((section, index) => {
     const autoSummary = `本题共${sectionLeafCount(section)}小题，共${sectionScore(section)}分`
@@ -672,9 +746,10 @@ function buildGroups(paper: Paper): { body: RenderGroup[]; answers: RenderGroup[
 
   const answers: RenderGroup[] = paper.sections.map((section, index) => {
     const leaves = flattenLeaves(section, starts.get(section.id) ?? 1)
-    const isChoice = (type: Question['type']) => type === 'single' || type === 'multiple'
-    const choice = leaves.filter((leaf) => isChoice(leaf.question.type))
-    const rest = leaves.filter((leaf) => !isChoice(leaf.question.type))
+    const isChoice = (leaf: FlattenedQuestion) =>
+      leaf.blank !== undefined || leaf.question.type === 'single' || leaf.question.type === 'multiple'
+    const choice = leaves.filter(isChoice)
+    const rest = leaves.filter((leaf) => !isChoice(leaf))
     return {
       id: `ans:${section.id}`,
       pieces: [
@@ -690,7 +765,7 @@ function buildGroups(paper: Paper): { body: RenderGroup[]; answers: RenderGroup[
               {/* 选择题答案横排合并成一行，非选择题一题一段并带【答案】黑体标签 */}
               {choice.length > 0 ? (
                 <p className="answer-key__row">
-                  {choice.map(({ number, question }) => `${number}．${question.answer || '—'}`).join('　')}
+                  {choice.map(({ number, question, blank }) => `${number}．${blank?.answer || question.answer || '—'}`).join('　')}
                 </p>
               ) : null}
               {rest.map(({ number, question }) => (
@@ -723,14 +798,16 @@ function answerSheetRows(question: Question): number {
 const AnswerSheetChoices = memo(function AnswerSheetChoices({
   items,
 }: {
-  items: Array<{ number: number; question: Question }>
+  items: FlattenedQuestion[]
 }) {
   return (
     <section className="answer-sheet-choice-grid">
-      {items.map(({ number, question }) => {
-        const optionCount = Math.max(question.options.length, 4)
+      {items.map(({ number, question, blank }) => {
+        const optionCount = question.type === 'sevenChoice'
+          ? Math.max(blank?.options.length ?? 0, 7)
+          : Math.max(blank?.options.length ?? question.options.length, 4)
         return (
-          <div key={question.id} className="answer-sheet-choice-item">
+          <div key={`${question.id}:${blank?.id ?? 'question'}`} className="answer-sheet-choice-item">
             <strong>{number}</strong>
             {Array.from({ length: optionCount }).map((_, index) => (
               <span key={index}>○ {String.fromCharCode(65 + index)}</span>
@@ -762,9 +839,10 @@ const AnswerSheetSubjective = memo(function AnswerSheetSubjective({
 function buildAnswerSheetGroups(paper: Paper): RenderGroup[] {
   const starts = sectionStartNumbers(paper)
   const leaves = paper.sections.flatMap((section) => flattenLeaves(section, starts.get(section.id) ?? 1))
-  const isChoice = (question: Question) => question.type === 'single' || question.type === 'multiple'
-  const choices = leaves.filter(({ question }) => isChoice(question))
-  const subjective = leaves.filter(({ question }) => !isChoice(question))
+  const isChoice = (leaf: FlattenedQuestion) =>
+    leaf.blank !== undefined || leaf.question.type === 'single' || leaf.question.type === 'multiple'
+  const choices = leaves.filter(isChoice)
+  const subjective = leaves.filter((leaf) => !isChoice(leaf))
   const groups: RenderGroup[] = []
 
   if (choices.length > 0) {

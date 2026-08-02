@@ -15,6 +15,12 @@ export interface RecognizedSolutionPart {
   answerLines: number
 }
 
+export interface RecognizedReadingBlank {
+  answer: string
+  score: number
+  options: string[]
+}
+
 export interface RecognizedLeafQuestion {
   type: LeafQuestionType
   stem: string
@@ -40,6 +46,7 @@ export interface RecognizedQuestion {
   material: string
   materialAlign: 'left' | 'center'
   children: RecognizedLeafQuestion[]
+  readingBlanks: RecognizedReadingBlank[]
 }
 
 export interface RecognizedSection {
@@ -181,6 +188,8 @@ const questionSchema = {
       enum: [
         'single',
         'multiple',
+        'sevenChoice',
+        'cloze',
         'fill',
         'segmentation',
         'calculation',
@@ -193,18 +202,38 @@ const questionSchema = {
     },
     material: {
       type: 'string',
-      description: '材料题的共享原文，非材料题为空字符串。长文章必须放在这里以支持逐行分页。',
+      description: '材料题或英语语篇题的原文；普通非材料题为空字符串。长文章必须放在这里以支持逐行分页。',
     },
     materialAlign: {
       type: 'string',
       enum: ['left', 'center'],
-      description: '材料整体对齐方式，通常为 left。',
+      description: '材料或英语语篇整体对齐方式，通常为 left。',
     },
     children: {
       type: 'array',
       maxItems: 100,
       items: leafQuestionSchema,
       description: '材料题的子题；非材料题为空数组。',
+    },
+    readingBlanks: {
+      type: 'array',
+      maxItems: 100,
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          answer: { type: 'string', description: '该空的参考答案；没有答案时为空字符串。' },
+          score: { type: 'number', minimum: 0, maximum: 200 },
+          options: {
+            type: 'array',
+            maxItems: 10,
+            items: { type: 'string' },
+            description: '完形填空该空的选项；七选五为空数组，选项写入 material 末尾。',
+          },
+        },
+        required: ['answer', 'score', 'options'],
+      },
+      description: '七选五/完形填空的空；这些空不要拆成 children。',
     },
   },
   required: [
@@ -220,6 +249,7 @@ const questionSchema = {
     'material',
     'materialAlign',
     'children',
+    'readingBlanks',
   ],
 } as const
 
@@ -299,19 +329,21 @@ const RECOGNITION_INSTRUCTIONS = `你是严谨的试卷转录器。读取用户�
 
 结构规则：
 1. 大题 title 不带“一、二、三”等序号；题干 stem 不带题号；选项不带 A/B/C/D 标号。
-2. 阅读文章、文言文、英语语篇、共享材料必须放在 material 字段，并把相关小题放入 children，保证文章可逐行跨页。非材料题的 material 为空、children 为空数组。
+2. 普通阅读文章、文言文和共享材料放在 material 字段，并把相关小题放入 children，保证文章可逐行跨页。英语七选五和完形填空使用独立题型 sevenChoice/cloze：文章放 material，各空放 readingBlanks，绝对不要拆成 children。非材料题的 material 为空、children 为空数组。
 3. 材料中的居中标题行以“#”开头；古诗作者行以“@”开头。保留自然段和必要换行。
 4. 数学公式转为可由 KaTeX 渲染的 $...$；化学式可使用 $\\ce{...}$。不要把普通正文误包成公式。
 5. 只有原文件明确提供参考答案时才填写 answer，否则使用空字符串。
 6. 按语义选择题型：数学、物理的书写推导题用 calculation；历史、政治等整段作答题用 shortAnswer；生物、化学、地理及物理实验等由若干小问组成的题用 solution；写作用 composition；断句题必须用 segmentation，不能伪装成多选题。
 7. solution 必须把每个“（1）（2）……”拆进 parts。题干句中原有答题线时，在准确位置写 ______；只有原卷在该小问结束后另留横线时才设置 parts[].answerLines。两种答题位可以在同题混用，不得给每个小问机械追加横线。
 8. segmentation 的 stem 只放作答说明，待断句句子单独放 segmentationText，options 必须为空。
-9. 非选择题 options 为空；非 solution 题 parts 为空；非 segmentation 题 segmentationText 为空；非作文题 compositionStyle 统一填 lines。
+9. 非选择题 options 为空；非 solution 题 parts 为空；非 segmentation 题 segmentationText 为空；非作文题 compositionStyle 统一填 lines。sevenChoice 的选项作为文章末尾内容保留，readingBlanks[].options 为空；cloze 的每个 readingBlanks[].options 保留四个选项。
 10. 按卷面说明提取分值；材料题自身 score 为 0，分值写在 children。`
 
 const QUESTION_TYPES: QuestionType[] = [
   'single',
   'multiple',
+  'sevenChoice',
+  'cloze',
   'fill',
   'segmentation',
   'calculation',
@@ -380,6 +412,17 @@ function parseSolutionPart(value: unknown, path: string): RecognizedSolutionPart
   }
 }
 
+function parseReadingBlank(value: unknown, path: string): RecognizedReadingBlank {
+  const item = record(value, path)
+  return {
+    answer: string(item.answer, `${path}.answer`, 200),
+    score: number(item.score, `${path}.score`, 0, 200),
+    options: array(item.options, `${path}.options`, 10).map((option, index) =>
+      string(option, `${path}.options[${index}]`, 5_000),
+    ),
+  }
+}
+
 function parseLeafQuestion(value: unknown, path: string): RecognizedLeafQuestion {
   const item = record(value, path)
   const question: RecognizedLeafQuestion = {
@@ -431,6 +474,9 @@ function parseQuestion(value: unknown, path: string): RecognizedQuestion {
     materialAlign: enumValue(item.materialAlign, ['left', 'center'], `${path}.materialAlign`),
     children: array(item.children, `${path}.children`, 100).map((child, index) =>
       parseLeafQuestion(child, `${path}.children[${index}]`),
+    ),
+    readingBlanks: array(item.readingBlanks ?? [], `${path}.readingBlanks`, 100).map((blank, index) =>
+      parseReadingBlank(blank, `${path}.readingBlanks[${index}]`),
     ),
   }
   if (question.type === 'solution' && question.parts.length === 0) {
@@ -513,6 +559,20 @@ function hydrateQuestion(question: RecognizedQuestion): Question {
       material: question.material,
       materialAlign: question.materialAlign,
       children: question.children.map(hydrateLeafQuestion),
+    }
+  }
+  if (question.type === 'sevenChoice' || question.type === 'cloze') {
+    return {
+      id: uid(),
+      type: question.type,
+      stem: question.stem,
+      score: question.readingBlanks.reduce((sum, blank) => sum + blank.score, 0),
+      options: [],
+      answer: question.answer,
+      answerLines: 0,
+      material: question.material,
+      materialAlign: question.materialAlign,
+      readingBlanks: question.readingBlanks.map((blank) => ({ ...blank, id: uid() })),
     }
   }
   return hydrateLeafQuestion({

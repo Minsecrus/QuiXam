@@ -1,6 +1,8 @@
 export type LeafQuestionType =
   | 'single'
   | 'multiple'
+  | 'sevenChoice'
+  | 'cloze'
   | 'fill'
   | 'segmentation'
   | 'calculation'
@@ -47,6 +49,14 @@ export interface QuestionImage {
   caption?: string
 }
 
+/** 英语语篇题中的一个空；cloze 还保存该空的四个选项。 */
+export interface ReadingBlank {
+  id: string
+  score: number
+  answer: string
+  options: string[]
+}
+
 export interface Question {
   id: string
   type: QuestionType
@@ -79,6 +89,8 @@ export interface Question {
   materialAlign?: 'left' | 'center'
   /** 材料题子题；仅一层嵌套，子题不能再是材料题 */
   children?: Question[]
+  /** 七选五/完形填空的空；这些空在卷面上不再渲染为附加子题。 */
+  readingBlanks?: ReadingBlank[]
   /** 附图（几何图、图表等），渲染在题干之后 */
   images?: QuestionImage[]
   /** 题库检索、难度配比与来源追溯使用的可选字段。 */

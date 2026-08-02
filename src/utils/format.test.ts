@@ -32,6 +32,18 @@ function material(id: string, children: Question[]): Question {
   return q(id, 0, { type: 'material', material: '', materialAlign: 'left', children })
 }
 
+function reading(id: string, type: 'sevenChoice' | 'cloze'): Question {
+  return q(id, 0, {
+    type,
+    stem: '阅读短文。',
+    material: '文章 ____1____。',
+    readingBlanks: [
+      { id: `${id}-1`, score: 2, answer: 'A', options: type === 'cloze' ? ['a', 'b', 'c', 'd'] : [] },
+      { id: `${id}-2`, score: 2, answer: 'B', options: type === 'cloze' ? ['a', 'b', 'c', 'd'] : [] },
+    ],
+  })
+}
+
 function section(id: string, questions: Question[]): Section {
   return { id, title: '大题', description: '', questions }
 }
@@ -80,6 +92,11 @@ describe('题号与分值统计', () => {
     expect(questionScore(m)).toBe(9)
   })
 
+  it('七选五和完形填空按空计数并汇总各空分值', () => {
+    expect(leafCount(reading('seven', 'sevenChoice'))).toBe(2)
+    expect(questionScore(reading('cloze', 'cloze'))).toBe(4)
+  })
+
   it('大题分值与题数正确汇总材料题', () => {
     const s = section('s1', [q('a', 5), material('m', [q('c1', 3), q('c2', 6)])])
     expect(sectionLeafCount(s)).toBe(3)
@@ -115,6 +132,15 @@ describe('跨大题连续编号', () => {
       [4, 'c2'],
       [5, 'd'],
     ])
+  })
+
+  it('语篇题展平为空但保留原题和空信息', () => {
+    const items = flattenLeaves(section('s3', [reading('cloze', 'cloze')]), 6)
+    expect(items.map((item) => [item.number, item.blank?.id])).toEqual([
+      [6, 'cloze-1'],
+      [7, 'cloze-2'],
+    ])
+    expect(items[0]?.question.id).toBe('cloze')
   })
 
   it('单题题号在全卷范围内正确', () => {

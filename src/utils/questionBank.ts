@@ -56,6 +56,7 @@ export function cloneQuestion(question: Question): Question {
     options: [...question.options],
     images: question.images?.map((image) => ({ ...image })),
     parts: question.parts?.map((part) => ({ ...part, id: uid() })),
+    readingBlanks: question.readingBlanks?.map((blank) => ({ ...blank, id: uid(), options: [...blank.options] })),
     children: question.children?.map(cloneQuestion),
     metadata: question.metadata ? normalizeQuestionMetadata(question.metadata) : undefined,
   }
@@ -86,6 +87,8 @@ export function clonePaperAsNew(paper: Paper, name = `${paper.name || '未命名
 export function questionSummary(question: Question, maxLength = 76): string {
   const raw = question.type === 'material'
     ? question.stem || question.material || ''
+    : question.type === 'sevenChoice' || question.type === 'cloze'
+      ? question.stem || question.material || ''
     : question.type === 'segmentation'
       ? question.segmentationText || question.stem
       : question.type === 'solution'

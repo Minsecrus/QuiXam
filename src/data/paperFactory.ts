@@ -3,6 +3,7 @@ import {
   type Paper,
   type Question,
   type QuestionType,
+  type ReadingBlank,
   type Section,
   type SolutionPart,
 } from '../types'
@@ -10,6 +11,15 @@ import { uid } from '../utils/id'
 
 const PART_MARKER = /^\s*[（(]\d+[）)]/
 const INLINE_BLANK = /_{3,}|＿{2,}/
+
+function readingBlanks(count: number, score: number, options: string[] = []): ReadingBlank[] {
+  return Array.from({ length: count }, () => ({
+    id: uid(),
+    score,
+    answer: '',
+    options: [...options],
+  }))
+}
 
 function partScore(stem: string): number {
   const match = stem.match(/[（(](\d{1,3})\s*分[）)]/)
@@ -105,6 +115,24 @@ export function createQuestion(type: QuestionType): Question {
       return { ...base, options: ['', '', '', ''] }
     case 'multiple':
       return { ...base, score: 6, options: ['', '', '', ''] }
+    case 'sevenChoice':
+      return {
+        ...base,
+        score: 12.5,
+        stem: '阅读下面短文，从短文后的选项中选出可以填入空白处的最佳选项。',
+        material: '',
+        materialAlign: 'left',
+        readingBlanks: readingBlanks(5, 2.5),
+      }
+    case 'cloze':
+      return {
+        ...base,
+        score: 15,
+        stem: '阅读下面短文，从每题所给的 A、B、C、D 四个选项中选出最佳选项。',
+        material: '',
+        materialAlign: 'left',
+        readingBlanks: readingBlanks(15, 1, ['', '', '', '']),
+      }
     case 'fill':
       return { ...base, stem: '______。' }
     case 'segmentation':
@@ -161,6 +189,23 @@ export function material(
     materialAlign: options.materialAlign ?? 'left',
     children,
     images: options.images,
+  })
+}
+
+export function readingQuestion(
+  type: 'sevenChoice' | 'cloze',
+  text: string,
+  blanks: Array<Pick<ReadingBlank, 'answer' | 'score' | 'options'>>,
+  options: Pick<Question, 'stem'>,
+): Question {
+  const score = blanks.reduce((sum, blank) => sum + blank.score, 0)
+  return question({
+    type,
+    stem: options.stem,
+    score,
+    material: text,
+    materialAlign: 'left',
+    readingBlanks: blanks.map((blank) => ({ ...blank, id: uid(), options: [...blank.options] })),
   })
 }
 

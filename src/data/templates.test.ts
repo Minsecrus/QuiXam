@@ -176,4 +176,18 @@ describe('paper templates', () => {
         .every((item) => item.compositionStyle === 'lines'),
     ).toBe(true)
   })
+
+  it('英语七选五和完形填空使用独立语篇题型，不生成附加子题', () => {
+    const english = paperTemplates.find((template) => template.id === 'gaokao-english')?.create()
+    expect(english).toBeDefined()
+    const questions = english!.sections.flatMap((section) => section.questions)
+    const sevenChoice = questions.find((question) => question.type === 'sevenChoice')
+    const cloze = questions.find((question) => question.type === 'cloze')
+
+    expect(sevenChoice?.children).toBeUndefined()
+    expect(sevenChoice?.readingBlanks).toHaveLength(5)
+    expect(cloze?.children).toBeUndefined()
+    expect(cloze?.readingBlanks).toHaveLength(15)
+    expect(cloze?.readingBlanks?.every((blank) => blank.options.length === 4)).toBe(true)
+  })
 })

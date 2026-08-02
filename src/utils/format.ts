@@ -1,4 +1,4 @@
-import type { Paper, Question, QuestionType, Section } from '../types'
+import type { Paper, Question, QuestionType, ReadingBlank, Section } from '../types'
 
 const CN_DIGITS = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
 
@@ -17,6 +17,8 @@ export function cnNumber(n: number): string {
 export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   single: '单选题',
   multiple: '多选题',
+  sevenChoice: '七选五',
+  cloze: '完形填空',
   fill: '填空题',
   segmentation: '断句题',
   calculation: '计算题',
@@ -32,15 +34,26 @@ export const QUESTION_TYPES = Object.keys(QUESTION_TYPE_LABELS) as QuestionType[
 /** 叶子题型：材料题不能嵌套材料题，故子题只能取这些 */
 export const LEAF_QUESTION_TYPES = QUESTION_TYPES.filter((type) => type !== 'material')
 
+export const READING_QUESTION_TYPES: QuestionType[] = ['sevenChoice', 'cloze']
+
+export function isReadingQuestion(question: Question): boolean {
+  return READING_QUESTION_TYPES.includes(question.type)
+}
+
 /** 一道题占用的题号数：材料题按子题数计，其余为 1 */
 export function leafCount(question: Question): number {
-  return question.type === 'material' ? (question.children?.length ?? 0) : 1
+  if (question.type === 'material') return question.children?.length ?? 0
+  if (isReadingQuestion(question)) return question.readingBlanks?.length ?? 0
+  return 1
 }
 
 /** 一道题的分值：材料题为子题分值合计 */
 export function questionScore(question: Question): number {
   if (question.type === 'material') {
     return (question.children ?? []).reduce((sum, child) => sum + (child.score || 0), 0)
+  }
+  if (isReadingQuestion(question)) {
+    return (question.readingBlanks ?? []).reduce((sum, blank) => sum + (blank.score || 0), 0)
   }
   return question.score || 0
 }
@@ -84,13 +97,25 @@ export function sectionItemNumbers(section: Section, startNumber: number): numbe
 }
 
 /** 展平为「题号 + 叶子题」序列（参考答案、导出用） */
-export function flattenLeaves(section: Section, startNumber: number): { number: number; question: Question }[] {
-  const leaves: { number: number; question: Question }[] = []
+export interface FlattenedQuestion {
+  number: number
+  question: Question
+  /** 七选五/完形的空；普通题和材料题子题没有该字段。 */
+  blank?: ReadingBlank
+}
+
+export function flattenLeaves(section: Section, startNumber: number): FlattenedQuestion[] {
+  const leaves: FlattenedQuestion[] = []
   let next = startNumber
   for (const question of section.questions) {
     if (question.type === 'material') {
       for (const child of question.children ?? []) {
         leaves.push({ number: next, question: child })
+        next += 1
+      }
+    } else if (isReadingQuestion(question)) {
+      for (const blank of question.readingBlanks ?? []) {
+        leaves.push({ number: next, question, blank })
         next += 1
       }
     } else {

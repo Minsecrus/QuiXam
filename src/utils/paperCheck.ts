@@ -36,6 +36,9 @@ function hasQuestionBody(question: Question): boolean {
   if (question.type === 'material') {
     return Boolean(question.stem.trim() || question.material?.trim() || (question.children?.length ?? 0) > 0)
   }
+  if (question.type === 'sevenChoice' || question.type === 'cloze') {
+    return Boolean(question.stem.trim() || question.material?.trim() || (question.readingBlanks?.length ?? 0) > 0)
+  }
   if (question.type === 'solution') {
     return Boolean(question.stem.trim() || question.parts?.some((part) => part.stem.trim()))
   }
@@ -49,6 +52,8 @@ function questionTypeName(type: QuestionType): string {
   const names: Record<QuestionType, string> = {
     single: '单选题',
     multiple: '多选题',
+    sevenChoice: '七选五',
+    cloze: '完形填空',
     fill: '填空题',
     segmentation: '断句题',
     calculation: '计算题',
@@ -80,6 +85,23 @@ function checkQuestion(question: Question, options: PaperCheckOptions, issues: P
     }
   }
 
+  if (question.type === 'sevenChoice' || question.type === 'cloze') {
+    const blanks = question.readingBlanks ?? []
+    if (blanks.length === 0) {
+      issues.push(issue('error', `reading-blanks:${question.id}`, `${label}没有设置空`, '请添加文章中的空，并为每个空录入答案信息。', target))
+    }
+    if (question.type === 'cloze') {
+      blanks.forEach((blank, index) => {
+        if (blank.options.length < 2) {
+          issues.push(issue('error', `cloze-options:${question.id}:${blank.id}`, `完形填空第 ${index + 1} 空选项不足`, '每个空至少需要两个选项。', target))
+        }
+        if (blank.options.some((option) => !option.trim())) {
+          issues.push(issue('error', `cloze-blank-option:${question.id}:${blank.id}`, `完形填空第 ${index + 1} 空存在空选项`, '请补全或删除空选项。', target))
+        }
+      })
+    }
+  }
+
   if (question.type === 'solution') {
     const parts = question.parts ?? []
     if (parts.length === 0) {
@@ -102,7 +124,14 @@ function checkQuestion(question: Question, options: PaperCheckOptions, issues: P
     issues.push(issue('warning', `material-children:${question.id}`, '材料题没有子题', '材料将打印出来，但不会占用题号。', target))
   }
 
-  const text = [question.stem, question.material, question.segmentationText, question.answer, ...(question.parts ?? []).map((part) => part.stem)].filter(Boolean).join('\n')
+  const text = [
+    question.stem,
+    question.material,
+    question.segmentationText,
+    question.answer,
+    ...(question.parts ?? []).map((part) => part.stem),
+    ...(question.readingBlanks ?? []).flatMap((blank) => [blank.answer, ...blank.options]),
+  ].filter(Boolean).join('\n')
   if (text.includes('[无法辨认]')) {
     issues.push(issue('warning', `unclear:${question.id}`, '含有“无法辨认”标记', '扫描识别结果尚未校对完成。', target))
   }
@@ -110,8 +139,16 @@ function checkQuestion(question: Question, options: PaperCheckOptions, issues: P
     issues.push(issue('warning', `figure:${question.id}`, '题目仍引用原卷图表', '请补入题图，或打印时确保原卷图表可供学生查看。', target))
   }
 
-  if (options.includeAnswers && question.type !== 'material' && !question.answer.trim()) {
+  if (options.includeAnswers && question.type !== 'material' && !question.answer.trim() && !['sevenChoice', 'cloze'].includes(question.type)) {
     issues.push(issue('warning', `answer:${question.id}`, '教师答案页存在空答案', '这不会阻止打印，但答案页会显示“—”。', target))
+  }
+
+  if (options.includeAnswers && (question.type === 'sevenChoice' || question.type === 'cloze')) {
+    for (const blank of question.readingBlanks ?? []) {
+      if (!blank.answer.trim()) {
+        issues.push(issue('warning', `reading-answer:${question.id}:${blank.id}`, '语篇题存在空答案', '这不会阻止打印，但答案页会显示“—”。', target))
+      }
+    }
   }
 
   for (const child of question.children ?? []) checkQuestion(child, options, issues)

@@ -1,5 +1,5 @@
 import type { Paper, Question } from '../../types'
-import { basePaper, createSection, material, question } from '../paperFactory'
+import { basePaper, createSection, material, question, readingQuestion } from '../paperFactory'
 
 function choice(stem: string, options: string[], score: number, answer: string): Question {
   return question({ type: 'single', stem, options, score, answer })
@@ -357,7 +357,8 @@ Another way to encourage healthy social interaction is by encouraging kids to us
             ),
           ],
         ),
-        material(
+        readingQuestion(
+          'sevenChoice',
           `#Common Mistakes New Runners Make
 Running is a great way to get in shape and just about everyone can do it. However, many make a number of common mistakes, which can interfere（妨碍）with training or lead to injury. ____36____, keep these things in mind to help you increase your chances of running success.
 • Doing too much too soon
@@ -376,9 +377,7 @@ D. Running can be uncomfortable at times
 E. It’s important not to use the same muscles
 F. While it may be true that you don’t need expensive equipment to take up running
 G. Experts suggest increasing your running distance by no more than 10% each week`,
-          ['B', 'G', 'A', 'F', 'D'].map((answer, index) =>
-            choice(`第${36 + index}空`, [], 2.5, answer),
-          ),
+          ['B', 'G', 'A', 'F', 'D'].map((answer) => ({ answer, score: 2.5, options: [] })),
           {
             stem: '第二节（共5小题；每小题2.5分，满分12.5分）\n阅读下面短文，从短文后的选项中选出可以填入空白处的最佳选项。选项中有两项为多余选项。',
           },
@@ -388,28 +387,29 @@ G. Experts suggest increasing your running distance by no more than 10% each wee
     {
       ...createSection('语言运用', '共两节，满分30分。'),
       questions: [
-        material(
+        readingQuestion(
+          'cloze',
           `I was halfway across Indiana headed home to Kentucky when my car broke down. My phone was ____41____ too. I managed to get to a gas station, but it was Sunday in the early fall, and there was no ____42____ on duty. I was working my way through university then and had little money for ____43____ the car.
 I sat alongside my car for several hours trying to ____44____ the heat when an older gentleman ____45____ to fuel his car. He asked about my car, and I ____46____ my predicament（困境）. To my ____47____, the gentleman told me that he had a daughter my age, and then he opened his trunk and ____48____ a tool set.
 Right then and there, this total ____49____ examined my engine, explaining as he worked that my spark plugs（火花塞）hadn’t been changed for so long that they were ____50____ to function. After about an hour, he ____51____ that my car was safe to finish the trip.
 ____52____ came at the hands of a stranger. ____53____ his clothes, working on a hot September afternoon, this man ____54____ a college student from disaster, just because she could have been his ____55____.`,
-          [
-            choice('', ['busy', 'loud', 'dead', 'secure'], 1, 'C'),
-            choice('', ['mechanic', 'policeman', 'manager', 'guide'], 1, 'A'),
-            choice('', ['washing', 'parking', 'purchasing', 'maintaining'], 1, 'D'),
-            choice('', ['feel', 'beat', 'absorb', 'produce'], 1, 'B'),
-            choice('', ['promised', 'refused', 'stopped', 'volunteered'], 1, 'C'),
-            choice('', ['solved', 'noticed', 'escaped', 'explained'], 1, 'D'),
-            choice('', ['surprise', 'regret', 'amusement', 'disappointment'], 1, 'A'),
-            choice('', ['called up', 'pulled out', 'put down', 'threw away'], 1, 'B'),
-            choice('', ['liar', 'beginner', 'stranger', 'loser'], 1, 'C'),
-            choice('', ['free', 'ready', 'uncertain', 'unable'], 1, 'D'),
-            choice('', ['pronounced', 'agreed', 'discovered', 'doubted'], 1, 'A'),
-            choice('', ['Tiredness', 'Kindness', 'Loneliness', 'Carefulness'], 1, 'B'),
-            choice('', ['Folding', 'Drying', 'Soiling', 'Mending'], 1, 'C'),
-            choice('', ['saved', 'called', 'judged', 'banned'], 1, 'A'),
-            choice('', ['friend', 'daughter', 'coworker', 'customer'], 1, 'B'),
-          ],
+          ([
+            ['C', ['busy', 'loud', 'dead', 'secure']],
+            ['A', ['mechanic', 'policeman', 'manager', 'guide']],
+            ['D', ['washing', 'parking', 'purchasing', 'maintaining']],
+            ['B', ['feel', 'beat', 'absorb', 'produce']],
+            ['C', ['promised', 'refused', 'stopped', 'volunteered']],
+            ['D', ['solved', 'noticed', 'escaped', 'explained']],
+            ['A', ['surprise', 'regret', 'amusement', 'disappointment']],
+            ['B', ['called up', 'pulled out', 'put down', 'threw away']],
+            ['C', ['liar', 'beginner', 'stranger', 'loser']],
+            ['D', ['free', 'ready', 'uncertain', 'unable']],
+            ['A', ['pronounced', 'agreed', 'discovered', 'doubted']],
+            ['B', ['Tiredness', 'Kindness', 'Loneliness', 'Carefulness']],
+            ['C', ['Folding', 'Drying', 'Soiling', 'Mending']],
+            ['A', ['saved', 'called', 'judged', 'banned']],
+            ['B', ['friend', 'daughter', 'coworker', 'customer']],
+          ] as Array<[string, string[]]>).map(([answer, options]) => ({ answer, score: 1, options })),
           {
             stem: '第一节（共15小题；每小题1分，满分15分）\n阅读下面短文，从每题所给的A、B、C、D四个选项中选出最佳选项。',
           },

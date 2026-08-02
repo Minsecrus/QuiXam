@@ -11,12 +11,13 @@ import {
   type Question,
   type QuestionImage,
   type QuestionType,
+  type ReadingBlank,
   type Section,
 } from '../types'
 import * as db from '../db'
 import { createFromTemplate, createQuestion, createSection } from '../data/templates'
 import { splitSegmentationText, splitSolutionText } from '../data/paperFactory'
-import { locateQuestion, QUESTION_TYPES } from '../utils/format'
+import { isReadingQuestion, locateQuestion, QUESTION_TYPES, READING_QUESTION_TYPES } from '../utils/format'
 import { collectAssetIds, dataUrlToBlob } from '../utils/transfer'
 import { uid } from '../utils/id'
 import {
@@ -168,6 +169,24 @@ function inferLegacyEssayType(
   return answerStyle === 'blank' ? 'calculation' : 'shortAnswer'
 }
 
+function normalizeReadingBlanks(value: unknown): ReadingBlank[] | undefined {
+  if (!Array.isArray(value)) return undefined
+  const blanks = value.flatMap((raw) => {
+    if (!raw || typeof raw !== 'object') return []
+    const item = raw as Record<string, unknown>
+    const options = Array.isArray(item.options)
+      ? item.options.filter((option): option is string => typeof option === 'string')
+      : []
+    return [{
+      id: typeof item.id === 'string' && item.id ? item.id : uid(),
+      score: typeof item.score === 'number' && Number.isFinite(item.score) ? Math.max(0, item.score) : 0,
+      answer: typeof item.answer === 'string' ? item.answer : '',
+      options,
+    }]
+  })
+  return blanks.length > 0 ? blanks : undefined
+}
+
 function migrateStoredQuestion(
   source: Question,
   subject: string,
@@ -193,6 +212,7 @@ function migrateStoredQuestion(
     answerStyle: _legacyAnswerStyle,
     children: legacyChildren,
     parts: legacyParts,
+    readingBlanks: legacyReadingBlanks,
     segmentationText: legacySegmentationText,
     compositionStyle: legacyCompositionStyle,
     metadata: legacyMetadata,
@@ -210,6 +230,7 @@ function migrateStoredQuestion(
     answer: typeof legacy.answer === 'string' ? legacy.answer : '',
     answerLines: Number.isFinite(legacy.answerLines) ? Math.max(0, legacy.answerLines) : 0,
     images: legacy.images?.map((image) => ({ ...image })),
+    readingBlanks: normalizeReadingBlanks(legacyReadingBlanks),
     metadata: legacyMetadata ? normalizeQuestionMetadata(legacyMetadata) : undefined,
     bankEntryId: typeof legacyBankEntryId === 'string' ? legacyBankEntryId : undefined,
   }
@@ -251,6 +272,17 @@ function migrateStoredQuestion(
       ...base,
       options: [],
       compositionStyle: legacyCompositionStyle ?? (english ? 'lines' : 'grid'),
+    }
+  }
+
+  if (type === 'sevenChoice' || type === 'cloze') {
+    return {
+      ...base,
+      options: [],
+      answerLines: 0,
+      material: typeof legacy.material === 'string' ? legacy.material : '',
+      materialAlign: 'left',
+      readingBlanks: normalizeReadingBlanks(legacyReadingBlanks) ?? [],
     }
   }
 
@@ -440,6 +472,7 @@ function normalizeImportedPaper(raw: unknown, assetIdMap: Map<string, string>): 
       answer: str(q.answer),
       answerLines: num(q.answerLines, 0),
       images: normalizeImages(q.images),
+      readingBlanks: normalizeReadingBlanks(q.readingBlanks),
       metadata: q.metadata ? normalizeQuestionMetadata(q.metadata) : undefined,
       bankEntryId: str(q.bankEntryId) || undefined,
     }
@@ -486,6 +519,17 @@ function normalizeImportedPaper(raw: unknown, assetIdMap: Map<string, string>): 
               : /英语|English/.test(subject)
                 ? 'lines'
                 : 'grid',
+      }
+    }
+
+    if (type === 'sevenChoice' || type === 'cloze') {
+      return {
+        ...base,
+        options: [],
+        answerLines: 0,
+        material: str(q.material),
+        materialAlign: 'left',
+        readingBlanks: normalizeReadingBlanks(q.readingBlanks) ?? [],
       }
     }
 
@@ -902,7 +946,7 @@ export const usePaperStore = create<PaperStore>((set, get) => ({
 
   addChildQuestion: (parentId, type) => {
     const { paper } = get()
-    if (!paper || type === 'material') return
+    if (!paper || type === 'material' || READING_QUESTION_TYPES.includes(type)) return
     const location = locateQuestion(paper, parentId)
     if (!location || location.question.type !== 'material') return
     const child = createQuestion(type)
@@ -979,7 +1023,12 @@ export const usePaperStore = create<PaperStore>((set, get) => ({
         ...section,
         questions: section.questions.map((question) => ({
           ...question,
-          ...(question.type !== 'material' && targetIds.has(question.id) ? { score: nextScore } : {}),
+          ...(question.type !== 'material' && !isReadingQuestion(question) && targetIds.has(question.id)
+            ? { score: nextScore }
+            : {}),
+          ...(isReadingQuestion(question) && targetIds.has(question.id)
+            ? { readingBlanks: (question.readingBlanks ?? []).map((blank) => ({ ...blank, score: nextScore })) }
+            : {}),
           children: question.children?.map((child) =>
             targetIds.has(child.id) ? { ...child, score: nextScore } : child,
           ),

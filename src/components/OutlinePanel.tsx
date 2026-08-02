@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, ListChecks, Plus, Trash2 } from 'lucide-reac
 import { usePaperStore } from '../store/paperStore'
 import {
   cnNumber,
+  isReadingQuestion,
   leafCount,
   locateQuestion,
   QUESTION_TYPES,
@@ -16,8 +17,10 @@ import type { Question } from '../types'
 
 function questionSummary(question: Question): string {
   const text =
-    question.type === 'material'
+  question.type === 'material'
       ? question.stem || question.material || ''
+      : isReadingQuestion(question)
+        ? question.stem || question.material || ''
       : question.type === 'segmentation'
         ? question.segmentationText || question.stem
         : question.type === 'solution'
@@ -38,7 +41,7 @@ function QuestionOutlineItem({
   onToggleBulk,
 }: {
   question: Question
-  number: number
+  number: number | string
   nested?: boolean
   bulkMode?: boolean
   bulkSelected?: boolean
@@ -200,11 +203,12 @@ export function OutlinePanel() {
                       section.questions.map((question, questionIndex) => {
                         const number = numbers[questionIndex]
                         if (question.type !== 'material') {
+                          const count = leafCount(question)
                           return (
                             <QuestionOutlineItem
                               key={question.id}
                               question={question}
-                              number={number}
+                              number={count > 1 ? `${number}–${number + count - 1}` : number}
                               bulkMode={bulkMode}
                               bulkSelected={bulkIds.has(question.id)}
                               onToggleBulk={toggleBulkQuestion}
